@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "interval_seconds": 60,
+  "sources": [
+    {
+      "enabled": false,
+      "provider": "gpt",
+      "path": "~/.codex/sessions",
+      "account_namespace": "local"
+    },
+    {
+      "enabled": false,
+      "provider": "claude",
+      "path": "~/.claude/projects",
+      "account_namespace": "local"
+    }
+  ]
+}

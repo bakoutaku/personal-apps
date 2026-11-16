@@ -1,0 +1,2 @@
+# Only Windows needs a packaged IANA database for Python zoneinfo.
+tzdata; sys_platform == 'win32'

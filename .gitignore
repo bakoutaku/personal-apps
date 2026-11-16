@@ -1,0 +1,21 @@
+# Dependencies and build output
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+.DS_Store
+
+# Local application data
+/data/
+/wardrobe/data/
+/ai-usage-dashboard/backend/local/
+/ai-usage-dashboard/contracts/mocks/
+/ai-usage-dashboard/contracts/openapi.json
+*.db
+*.db-*
+*.sqlite*
+.env.local
+.env.*.local

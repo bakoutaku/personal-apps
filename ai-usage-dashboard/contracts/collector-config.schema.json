@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Usage Dashboard local collector configuration v1",
+  "description": "Local CLI configuration, not an HTTP request. Runtime also enforces OS-specific absolute paths and uniqueness of enabled provider/account_namespace pairs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "interval_seconds", "sources"],
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "interval_seconds": {"type": "integer", "minimum": 30, "maximum": 3600},
+    "sources": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["enabled", "provider", "path"],
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "provider": {"type": "string", "enum": ["gpt", "claude"]},
+          "path": {"type": "string", "minLength": 1, "description": "Absolute local path or user-home path beginning with ~; no environment variable expansion. JSONL file or directory."},
+          "account_namespace": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S", "default": "local"}
+        }
+      }
+    }
+  }
+}

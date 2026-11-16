@@ -1,0 +1,92 @@
+/* GPT 页配色：珍珠白 + 灰调淡紫（数值取自 references/claude-layouts/gpt/Main.dc.html）。
+   正文 / 辅助文字在 --bg 与 --card 上对比度均 ≥ 4.5:1。 */
+:root,
+[data-provider='gpt'] {
+  --bg: #f8f6fa;
+  --surface: #fdfcfe;
+  --card: #efebf6;
+  --row-muted: #f5f3f9;
+  --future: #f2f0f7;
+  --nav: #e9e5f2;
+  --badge: #e6e1f3;
+
+  --text: #262433;
+  --text-muted: #5b5769;
+  --text-subtle: #696579;
+  --on-dark: #ffffff;
+  --on-dark-muted: #d8d2ec;
+
+  --accent: #5e5592;
+  --accent-strong: #474070;
+  --bar: #ada3d3;
+  --bar-light: #c9c1e3;
+  --hatch: #c2bbd9;
+  --line-derived: #8e87ae;
+  /* 同步失败（State-Failed）与观测过时（State-Stale）的配色 */
+  --danger: #7f1d33;
+  --danger-strong: #5e1427;
+  --danger-icon: #a12a44;
+  --danger-bg: #fbedef;
+  --danger-soft: #fdf6f7;
+  --danger-border: #e8b9c2;
+  --warn: #5c4700;
+  --warn-strong: #4a3900;
+  --warn-icon: #7a5e00;
+  --warn-bg: #fbf6e6;
+  --warn-border: #e6d6a6;
+
+  --border: #ddd8ea;
+  --border-soft: #e3deee;
+  --grid: #ece9f3;
+  --track: #d6d0e6;
+  --ghost-border: #ada6c6;
+
+  /* 堆叠分项：同色系明度递进，可区分但不抢主色 */
+  --stack-1: #5e5592;
+  --stack-2: #8e85bf;
+  --stack-3: #b7add6;
+  --stack-4: #d9d3ea;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Cascadia Mono', monospace;
+  --font-heading: var(--font-sans);
+}
+
+/* Claude 页配色：暖米白 + 棕橙（数值取自 references/claude-layouts/claude/ClaudeCode.dc.html）。
+   线框图的 #8A7A68 在米白上只有 3.9:1，只用于大字和图形；小字改用 #74655A（≥ 4.4:1）。 */
+[data-provider='claude'] {
+  --bg: #fbf7f0;
+  --surface: #fffdf8;
+  --card: #f4ecdf;
+  --row-muted: #f8f1e6;
+  --future: #f6efe4;
+  --nav: #f4ecdf;
+  --badge: #f6e2cc;
+
+  --text: #2b241d;
+  --text-muted: #6b5e50;
+  --text-subtle: #74655a;
+  --on-dark: #fbf7f0;
+  --on-dark-muted: #e9c9a6;
+
+  --accent: #a9501a;
+  --accent-strong: #7e3a10;
+  --bar: #e0883f;
+  --bar-light: #f0c49a;
+  --hatch: #d4bc9c;
+  --line-derived: #b08a66;
+
+  --border: #e6d8c3;
+  --border-soft: #e6d8c3;
+  --grid: #efe4d4;
+  --track: #e6d8c3;
+  --ghost-border: #c9ae8e;
+
+  --stack-1: #a9501a;
+  --stack-2: #d0702e;
+  --stack-3: #e9a466;
+  --stack-4: #f4cfa5;
+
+  --font-heading: 'Songti SC', 'STSong', 'Noto Serif SC', 'SimSun', Georgia, serif;
+}

@@ -1,0 +1,45 @@
+[project]
+name = "wardrobe"
+version = "0.1.0"
+description = "Local personal wardrobe manager (FastAPI + SQLite)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "pydantic>=2.9",
+    "python-multipart>=0.0.18",
+    "pillow>=11.0",
+    "typer>=0.15",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.28",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+# 不把项目本身安装进 .venv：macOS 可能给 .venv 中的 .pth 加 hidden 标记导致 Python 忽略它，
+# 因此由 ./wardrobe 与 pytest 的 pythonpath 显式指定 backend/ 目录。
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "E501"]  # B008: FastAPI 依赖注入写法；E501: 行宽交给 ruff format
+
+[tool.ruff.lint.per-file-ignores]
+# GPT 审查的独立复现脚本：保留原有断言写法
+"tests/test_review_phase1.py" = ["B011"]

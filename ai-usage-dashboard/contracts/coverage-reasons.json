@@ -1,0 +1,43 @@
+{
+  "registry_version": 1,
+  "api_version": "0.2.0",
+  "closed_enum": false,
+  "unknown_display_text": "未识别的覆盖原因",
+  "reasons": {
+    "local_device_only": {
+      "display_text": "仅本机日志，其他设备未覆盖",
+      "current_producer": "live_and_mock",
+      "meaning": "只说明采集范围，不代表本机全部请求已完整捕获。"
+    },
+    "no_records_not_proof_of_zero": {
+      "display_text": "没有已记录事件，不等于没有使用",
+      "current_producer": "live_and_mock",
+      "meaning": "当前范围没有匹配记录，不能据此将未知用量填为零。"
+    },
+    "selected_products_not_configured": {
+      "display_text": "所选产品中有未接入的来源",
+      "current_producer": "live_and_mock",
+      "meaning": "至少一个所选产品来源未配置；不代表全部未接入，需结合 sources 判断。"
+    },
+    "not_yet_elapsed": {
+      "display_text": "该时段尚未发生",
+      "current_producer": "live_and_mock",
+      "meaning": "未来区间，不是采集缺口，也不是零用量。"
+    },
+    "synthetic_local_history": {
+      "display_text": "模拟本机历史，仅包含样例记录",
+      "current_producer": "mock_example",
+      "meaning": "虚构历史样例的覆盖依据；不是实际设备或全账户覆盖证据。"
+    },
+    "collector_could_not_read_source": {
+      "display_text": "采集时无法读取来源，此段覆盖存在缺口",
+      "current_producer": "mock_example",
+      "meaning": "当前用于失败状态样例；应保留之前有效记录，不将缺口当作零。"
+    },
+    "one_event_has_unknown_usage": {
+      "display_text": "该桶中有一条记录的用量未知",
+      "current_producer": "mock_example",
+      "meaning": "当前部分已知样例中恰好一条记录未知；一般情况以 unknown_total_count 为准。"
+    }
+  }
+}
