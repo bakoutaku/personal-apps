@@ -4,6 +4,18 @@
 
 トークン使用量、直近の活動、カレンダー履歴、ログに記録されたCodexの利用枠を確認できます。ClaudeがReactとTypeScriptのフロントエンドを、GPTがPythonとSQLiteのバックエンドを支援しました。上流の白い竜のイラストと旧インストーラーは同梱していません。Windows実機では未検証です。
 
+## 画面例
+
+架空のデータを使った実際の動作画面です。
+
+### GPT
+
+![GPT · 画面例](screenshots/gpt.jpg)
+
+### Claude
+
+![Claude · 画面例](screenshots/claude.jpg)
+
 ## サンプルデータで試す
 
 Python 3.9以上とNode.js 24以上を用意し、リポジトリのルートで実行します。http://127.0.0.1:5174 を開きます。デモは端末上のAIログを読み込みません。

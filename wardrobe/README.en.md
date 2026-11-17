@@ -4,6 +4,12 @@ English · [简体中文](README.md) · [日本語](README.ja.md)
 
 Manage clothing, products, outfits and purchases with photos, filters, tags, import previews, and a REST API. Local suggestions require review before application. GPT and Claude assisted with implementation and review of the Vue, TypeScript, FastAPI and SQLite app.
 
+## Screenshots
+
+The local demo library with fictional clothing records and sample images.
+
+![Wardrobe · Screenshots](screenshots/wardrobe.jpg)
+
 ## Fictional-data demo
 
 On macOS, install uv, Python 3.12 and Node.js 24+. Run from the repository root. Open http://127.0.0.1:18765. The demo uses a separate directory and port and seeds only an empty database.

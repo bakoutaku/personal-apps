@@ -4,6 +4,12 @@
 
 一个在本机管理衣物、商品、穿搭和购买记录的工具。目前是试用版，主要在 macOS 开发。界面使用中文。技术栈为 Vue、TypeScript、FastAPI 和 SQLite，GPT 与 Claude 参与开发和审查。
 
+## 界面截图
+
+本机演示库中的虚构衣物和示例图片。
+
+![Wardrobe · 界面截图](screenshots/wardrobe.jpg)
+
 ## 能做什么
 
 - **我的衣橱**记录衣物、照片、品牌、尺码、颜色和标签，可搜索和筛选。

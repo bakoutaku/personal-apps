@@ -4,6 +4,12 @@
 
 一个面向 Claude 的非官方 macOS 桌宠。由 GPT 辅助开发，使用 Swift、AppKit 和 SwiftUI。目前公开的是 **0.3.8 源码预览版**。
 
+## 界面截图
+
+公开预览版中实际运行的桌宠角色。
+
+![Claude Companion · 界面截图](screenshots/desktop-mascot.png)
+
 ## 功能
 
 - 桌宠可以拖动并记住位置，单击可收起或展开提示。

@@ -4,6 +4,18 @@
 
 在本机查看 Codex 和 Claude Code 的使用记录。可以区分最近活动、按日／周／月汇总的历史，以及 Codex 日志实际记录的额度快照。当前提供 macOS 源码预览，Windows 尚未实机验证。前端为 React 与 TypeScript，由 Claude 辅助开发。后端为 Python 与 SQLite，由 GPT 辅助开发。
 
+## 界面截图
+
+使用虚构记录截取的实际运行界面。
+
+### GPT
+
+![GPT · 界面截图](screenshots/gpt.jpg)
+
+### Claude
+
+![Claude · 界面截图](screenshots/claude.jpg)
+
 ## 能看到什么
 
 - **用量**按时间段查看 token 记录。缺失时段会标记为未知，日志中的 token 数量无法直接换算为订阅额度。

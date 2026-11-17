@@ -4,6 +4,12 @@ English · [简体中文](README.md) · [日本語](README.ja.md)
 
 An unofficial macOS desktop companion for Claude. It shows a draggable mascot and local status cards for activity, approval requests, and the end of a response. Built with Swift, AppKit, and SwiftUI with GPT assistance.
 
+## Screenshots
+
+The mascot window running in the public preview.
+
+![Claude Companion · Screenshots](screenshots/desktop-mascot.png)
+
 ## Build and try
 
 Run the build from this folder with macOS 14 or later and Xcode Command Line Tools. Open the locally signed app in dist and use the menu’s demo to preview the status cards.
