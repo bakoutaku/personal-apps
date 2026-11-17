@@ -1,6 +1,6 @@
 # Wardrobe · デジタルクローゼット
 
-[English](README.md) · [简体中文](README.zh-CN.md) · 日本語
+[English](README.en.md) · [简体中文](README.md) · 日本語
 
 衣類、商品、コーディネート、購入記録を管理します。写真、絞り込み、タグ、インポートのプレビュー、REST APIに対応します。端末内で計算した候補は確認してから反映します。Vue、TypeScript、FastAPI、SQLiteを使用し、GPTとClaudeが実装とレビューを支援しました。
 

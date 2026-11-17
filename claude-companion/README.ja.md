@@ -1,6 +1,6 @@
 # Claude Companion
 
-[English](README.md) · [简体中文](README.zh-CN.md) · 日本語
+[English](README.en.md) · [简体中文](README.md) · 日本語
 
 Claude向けの非公式macOSデスクトップマスコットです。ドラッグで移動でき、作業中・承認待ち・応答終了をローカルで表示します。Swift、AppKit、SwiftUIを使用し、GPTが開発を支援しました。
 
@@ -18,3 +18,7 @@ open 'dist/Claude Companion Preview.app'
 Claudeのウィンドウを読み取る場合は、プレビュー版にmacOSのアクセシビリティ権限を付与してください。ボタンのラベル、ウィンドウタイトル、会話アドレスから状態を推定します。操作の承認は行いません。バックグラウンドのウィンドウ、クラウドタスク、すべてのClaudeバージョンでの動作は未検証です。Claude Codeのイベント処理はソースに含まれます。プレビュー版はフックの追加やClaudeの設定変更を行いません。
 
 内蔵の簡易マスコットを使用します。第三者のイラスト、インストーラー、署名用の認証情報は同梱していません。
+
+## キャラクター素材の出典
+
+初期のローカル版では [fywdy/chatgpt-chibi-pets](https://github.com/fywdy/chatgpt-chibi-pets) の非公式キャラクター「Claude 橙書娘」を使用しました。その後のローカル版では、このキャラクターを参考にGPTの画像生成機能でスプライトを制作しました。上流のイラストは CC BY-NC 4.0 と記載されています。公開プレビューにはどちらの画像も同梱せず、SwiftUIで描画した内蔵マスコットを表示します。

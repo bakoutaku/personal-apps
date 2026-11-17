@@ -1,6 +1,6 @@
 # AI Usage Dashboard
 
-[English](README.md) · [简体中文](README.zh-CN.md) · 日本語
+[English](README.en.md) · [简体中文](README.md) · 日本語
 
 トークン使用量、直近の活動、カレンダー履歴、ログに記録されたCodexの利用枠を確認できます。ClaudeがReactとTypeScriptのフロントエンドを、GPTがPythonとSQLiteのバックエンドを支援しました。元のイラストと旧インストーラーは同梱していません。Windows実機では未検証です。
 
@@ -27,3 +27,7 @@ python3 backend/tools/build_contract.py
 cd backend
 python3 -m usage_dashboard --data-dir ./local/public-demo serve --frontend-dist ../frontend/dist --open-browser
 ```
+
+## キャラクター素材の出典
+
+ローカル版では、独自の素材利用声明が付く [T7moris/GPT-Niang の白い竜のキャラクター](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets)と、上流の素材ライセンスが CC BY-NC-SA 4.0 の [aklnaaw/dsh-xiaoke-widget の Claude「小克」](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67) を使用しました。公開プレビューには両方のイラストを同梱していません。

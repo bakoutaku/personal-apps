@@ -1,20 +1,38 @@
 # Claude Companion
 
-English · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+简体中文 · [日本語](README.ja.md) · [English](README.en.md)
 
-An unofficial macOS desktop companion for Claude. It shows a draggable mascot and local status cards for activity, approval requests, and the end of a response. Built with Swift, AppKit, and SwiftUI with GPT assistance.
+一个面向 Claude 的非官方 macOS 桌宠。由 GPT 辅助开发，使用 Swift、AppKit 和 SwiftUI。目前公开的是 **0.3.8 源码预览版**。
 
-## Build and try
+## 功能
 
-Run the build from this folder with macOS 14 or later and Xcode Command Line Tools. Open the locally signed app in dist and use the menu’s demo to preview the status cards.
+- 桌宠可以拖动并记住位置，单击可收起或展开提示。
+- 状态卡会提示正在回复、需要授权或本轮回复结束。需要授权时请回到 Claude 窗口操作。
+- 菜单可暂停观察、打开诊断、预览提示卡，以及打开自定义形象目录。
+- 活动列表可查看本次运行的近期提醒；退出后列表不会保留。
 
-~~~sh
+## 构建与演示
+
+需要 macOS 14 或以上及 Xcode 命令行工具。从仓库根目录运行：
+
+```sh
+cd claude-companion
 ./build.sh
 open 'dist/Claude Companion Preview.app'
-~~~
+```
 
-## Claude Desktop integration
+构建脚本会运行核心测试并生成本地签名的应用。先从菜单栏打开演示即可查看通知卡，无需辅助功能权限，也不会调用 Claude。
 
-Grant the preview app macOS Accessibility permission if you want to observe a readable Claude Desktop window. The app uses button labels, the native window title, and the conversation address to infer status. It cannot approve actions. Background windows, cloud tasks, and all Claude versions have not been verified. Claude Code event handling is present in the source. This preview does not install hooks or change Claude settings.
+## 连接 Claude 桌面端
 
-The source preview bundles its own simple mascot. Third-party character art, installers, and signing credentials are omitted.
+如需实时观察，打开「系统设置 → 隐私与安全性 → 辅助功能」，添加并开启 **Claude Companion Preview**。保留一个可读取的 Claude 对话窗口，先用较长的回复测试，再从桌宠菜单查看「连接状态与说明」。
+
+应用在本机读取按钮标签、原生窗口标题和会话地址，判断生成是否开始或结束，不读取回复正文。本轮结束也可能是手动停止，不能据此判断任务成功。切换会话、窗口不可读或状态不明确时，应用会放弃本轮判断。后台或最小化窗口、云端任务以及不同 Claude 版本的兼容性尚未全面验证。
+
+源码保留 Claude Code 本地事件处理入口。预览版不会安装 hooks、修改 Claude 设置或替用户批准操作。
+
+## 角色素材来源
+
+早期本机版使用了 [fywdy/chatgpt-chibi-pets](https://github.com/fywdy/chatgpt-chibi-pets) 的「Claude 橙书娘」同人素材。后来，本机版用 GPT 的图像生成工具参考原形象重绘了四状态图集。上游美术按其声明采用 CC BY-NC 4.0。这里保留参考来源，GPT 重绘版也沿用这一素材来源说明。
+
+公开源码预览使用 SwiftUI 绘制的内置简易角色。原图、参考原图生成的图集、旧安装包和本机签名凭据均未随仓库发布。
