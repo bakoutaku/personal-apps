@@ -45,4 +45,4 @@ python3 -m usage_dashboard --data-dir ./local/public-demo serve --frontend-dist 
 
 早期**本机版**用过两张未经本项目改绘的第三方角色图。GPT 白龙娘来自 [T7moris/GPT-Niang 的角色素材与声明](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets)，角色图适用单独声明。Claude「小克」来自 [aklnaaw/dsh-xiaoke-widget](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67)，上游在 [LICENSE-ARTWORK](https://github.com/aklnaaw/dsh-xiaoke-widget/blob/8e2a207bfc9ae3983168dcc847e54734771bce67/LICENSE-ARTWORK) 下标注 CC BY-NC-SA 4.0。
 
-当前公开版没有打包这两张立绘或旧安装包。界面仍保留用于识别数据来源的供应商图标，出处见应用的「关于」页。
+当前公开版只随附 Claude「小克」原图，切换到 Claude 时显示。图片的署名和许可随文件保留，见 [素材说明](frontend/public/characters/SOURCE.md)。GPT 白龙娘和旧安装包未打包。界面仍保留用于识别数据来源的供应商图标，出处见应用的「关于」页。

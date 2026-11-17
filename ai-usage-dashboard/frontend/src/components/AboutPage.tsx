@@ -12,6 +12,14 @@ export function AboutPage() {
       </div>
 
       <div className="about-block">
+        <h3>Claude 角色素材</h3>
+        <p>
+          「小克」立绘来自 aklnaaw/dsh-xiaoke-widget，按 CC BY-NC-SA 4.0 分享。
+          {' '}<a href={`${import.meta.env.BASE_URL}characters/SOURCE.md`}>素材来源和许可</a>
+        </p>
+      </div>
+
+      <div className="about-block">
         <h3>供应商图标</h3>
         <p className="about-icons">
           <OpenAIIcon size={20} color="var(--text)" /> <ClaudeIcon size={20} />

@@ -35,4 +35,4 @@ open 'dist/Claude Companion Preview.app'
 
 早期本机版使用了 [fywdy/chatgpt-chibi-pets](https://github.com/fywdy/chatgpt-chibi-pets) 的「Claude 橙书娘」同人素材。后来，本机版用 GPT 的图像生成工具参考原形象重绘了四状态图集。上游美术按其声明采用 CC BY-NC 4.0。这里保留参考来源，GPT 重绘版也沿用这一素材来源说明。
 
-公开源码预览使用 SwiftUI 绘制的内置简易角色。原图、参考原图生成的图集、旧安装包和本机签名凭据均未随仓库发布。
+公开源码预览随附 GPT 参考原形象重绘的四状态图集，供非商业使用。署名、改绘说明和许可见 [随附素材说明](Assets/ClaudeOrangeScholar/SOURCE.md)。原图、旧安装包和本机签名凭据未随仓库发布。

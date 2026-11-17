@@ -11,7 +11,8 @@ xcrun swiftc Sources/{CodeHooks,MonitorCore,CompletionAnimation,CardPlacement,Pe
 stage=$(mktemp -d "${TMPDIR:-/tmp}/companion-preview.XXXXXX")
 trap 'rm -rf -- "$stage"' EXIT
 app="$stage/Claude Companion Preview.app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/ClaudeOrangeScholar"
+cp Assets/ClaudeOrangeScholar/* "$app/Contents/Resources/ClaudeOrangeScholar/"
 xcrun swiftc -O Sources/*.swift -framework AppKit -framework SwiftUI -framework ApplicationServices -framework ImageIO -o "$app/Contents/MacOS/ClaudeCompanion"
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

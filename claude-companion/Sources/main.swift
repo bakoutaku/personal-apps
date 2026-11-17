@@ -693,7 +693,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         隐私：在本机读取 Claude 的按钮标签、会话地址和原生窗口标题，不读取回复内的标题、正文段落或输入内容。不联网、不使用 API Key、不改变 Claude 应用程序文件、不自动授权。Code hooks 丢弃输入中的提示词、工具参数、回复、路径；本地队列仅保存事件类型、会话摘要与时间，读取后删除。活动列表只在内存中。
 
-        形象：公开版使用内置形象，可在菜单中打开预览版的自定义形象文件夹。
+        形象：随附四状态图集由 GPT 参考 fywdy 的 Claude 橙书娘同人形象重绘，按 CC BY-NC 4.0 分享。应用资源目录保留署名与许可。
 
         当前诊断（重新打开此窗口刷新）：
         \(model.detail)
