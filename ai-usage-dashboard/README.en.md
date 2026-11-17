@@ -2,7 +2,7 @@
 
 English · [简体中文](README.md) · [日本語](README.ja.md)
 
-Local token usage, recent activity, calendar history, and observed Codex quota. Claude assisted on the React and TypeScript frontend and GPT on the Python and SQLite backend. The macOS source preview omits the GPT dragon artwork and old installers. Windows has yet to be verified on a physical machine.
+Local token usage, recent activity, calendar history, and observed Codex quota. Claude assisted on the React and TypeScript frontend and GPT on the Python and SQLite backend. The macOS source preview omits the upstream GPT dragon artwork and old installers. Windows has yet to be verified on a physical machine.
 
 ## Synthetic demo
 
@@ -30,4 +30,4 @@ python3 -m usage_dashboard --data-dir ./local/public-demo serve --frontend-dist 
 
 ## Character artwork credits
 
-The local edition used the [GPT dragon mascot by T7moris/GPT-Niang](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets) subject to its separate character notice, and [Claude Xiao Ke by aklnaaw/dsh-xiaoke-widget](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67) under the upstream artwork license (CC BY-NC-SA 4.0). This public preview bundles Xiao Ke unchanged and displays it in the Claude view. See the [bundled artwork credits](frontend/public/characters/SOURCE.md). The GPT dragon illustration is not bundled.
+The local edition used the [GPT dragon mascot by T7moris/GPT-Niang](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets) subject to its separate character notice, and [Claude Xiao Ke by aklnaaw/dsh-xiaoke-widget](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67) under the upstream artwork license (CC BY-NC-SA 4.0). The current preview uses two newly generated characters. The GPT view shows the white dragon, created from a text description. The Claude view shows a reader generated using the dragon illustration as a style reference. Xiao Ke shipped in an earlier public preview. See the [artwork credits and prompts](frontend/public/characters/SOURCE.md).

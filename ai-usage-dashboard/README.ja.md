@@ -2,7 +2,7 @@
 
 [English](README.en.md) · [简体中文](README.md) · 日本語
 
-トークン使用量、直近の活動、カレンダー履歴、ログに記録されたCodexの利用枠を確認できます。ClaudeがReactとTypeScriptのフロントエンドを、GPTがPythonとSQLiteのバックエンドを支援しました。白い竜のイラストと旧インストーラーは同梱していません。Windows実機では未検証です。
+トークン使用量、直近の活動、カレンダー履歴、ログに記録されたCodexの利用枠を確認できます。ClaudeがReactとTypeScriptのフロントエンドを、GPTがPythonとSQLiteのバックエンドを支援しました。上流の白い竜のイラストと旧インストーラーは同梱していません。Windows実機では未検証です。
 
 ## サンプルデータで試す
 
@@ -30,4 +30,4 @@ python3 -m usage_dashboard --data-dir ./local/public-demo serve --frontend-dist 
 
 ## キャラクター素材の出典
 
-ローカル版では、独自の素材利用声明が付く [T7moris/GPT-Niang の白い竜のキャラクター](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets)と、上流の素材ライセンスが CC BY-NC-SA 4.0 の [aklnaaw/dsh-xiaoke-widget の Claude「小克」](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67) を使用しました。公開プレビューでは、Claudeの画面に「小克」の原画を表示します。[素材の署名とライセンス](frontend/public/characters/SOURCE.md)を同梱しています。白い竜のイラストは同梱していません。
+ローカル版では、独自の素材利用声明が付く [T7moris/GPT-Niang の白い竜のキャラクター](https://github.com/T7moris/GPT-Niang/tree/b6f5eb8972d1802821006b7208d20a834fa6a08b/gpt-niang-usage/assets)と、上流の素材ライセンスが CC BY-NC-SA 4.0 の [aklnaaw/dsh-xiaoke-widget の Claude「小克」](https://github.com/aklnaaw/dsh-xiaoke-widget/tree/8e2a207bfc9ae3983168dcc847e54734771bce67) を使用しました。現在は新たに生成した2枚を表示します。GPT画面の白い竜は文章から生成し、Claude画面の読書キャラクターは白い竜の画風を参照して生成しました。「小克」は以前の公開プレビューで使用していました。[素材の出典と生成プロンプト](frontend/public/characters/SOURCE.md)を参照してください。

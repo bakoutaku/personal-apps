@@ -111,7 +111,7 @@ export function HomeView(p: Props) {
         </div>
       </div>
 
-      <div className={p.provider === "claude" ? "stage with-art" : "stage"}>
+      <div className="stage with-art">
         <div className="stage-chart">
           {p.failure ? (
             p.failure
@@ -123,11 +123,14 @@ export function HomeView(p: Props) {
             <HomeChart {...p} data={data} history={history} />
           )}
         </div>
-        {p.provider === 'claude' && (
-          <div className="character" aria-hidden="true">
-            <img src={`${import.meta.env.BASE_URL}characters/claude-chibi.png`} alt="" decoding="async" draggable={false} />
-          </div>
-        )}
+        <div className="character" aria-hidden="true">
+          <img
+            src={`${import.meta.env.BASE_URL}characters/${p.provider === 'claude' ? 'claude-reader.png' : 'gpt-white-dragon.png'}`}
+            alt=""
+            decoding="async"
+            draggable={false}
+          />
+        </div>
       </div>
     </section>
   );
