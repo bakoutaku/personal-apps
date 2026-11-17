@@ -1,3 +1,4 @@
+import { currentLanguage, t as translate } from "../i18n";
 // 时区相关：一律以 meta.timezone（IANA）为准，不使用浏览器本地时区。
 
 const partsFmtCache = new Map<string, Intl.DateTimeFormat>();
@@ -113,25 +114,25 @@ export function fmtRemaining(ms: number): string | null {
   const days = Math.floor(totalMin / 1440);
   const h = Math.floor((totalMin % 1440) / 60);
   const m = totalMin % 60;
-  if (days > 0) return `${days} 天 ${h} 小时`;
+  if (days > 0) return translate("{0} 天 {1} 小时", days, h);
   return `${h}:${pad(m)}`;
 }
 
 /** 相对于 as_of 的“x 分钟前”。 */
 export function fmtAgo(iso: string, asOfMs: number): string {
   const diffMin = Math.round((asOfMs - Date.parse(iso)) / 60_000);
-  if (diffMin < 0) return '晚于模拟时钟';
-  if (diffMin < 1) return '刚刚';
-  if (diffMin < 60) return `${diffMin} 分钟前`;
+  if (diffMin < 0) return translate("晚于模拟时钟");
+  if (diffMin < 1) return translate("刚刚");
+  if (diffMin < 60) return translate("{0} 分钟前", diffMin);
   const h = Math.floor(diffMin / 60);
-  if (h < 48) return `${h} 小时前`;
-  return `${Math.floor(h / 24)} 天前`;
+  if (h < 48) return translate("{0} 小时前", h);
+  return translate("{0} 天前", Math.floor(h / 24));
 }
 
 export function fmtDurationSeconds(sec: number): string {
-  if (sec % 86400 === 0) return `${sec / 86400} 天`;
-  if (sec % 3600 === 0) return `${sec / 3600} 小时`;
-  return `${Math.round(sec / 60)} 分`;
+  if (sec % 86400 === 0) return translate("{0} 天", sec / 86400);
+  if (sec % 3600 === 0) return translate("{0} 小时", sec / 3600);
+  return translate("{0} 分", Math.round(sec / 60));
 }
 
 // ---- 自然日 / 周 / 月（日历视图用）----
@@ -185,6 +186,9 @@ export function calendarRange(view: CalendarView, key: string, tz: string): { fr
 const WEEKDAY_ZH = ['一', '二', '三', '四', '五', '六', '日'];
 
 export function fmtWeekday(ms: number, tz: string): string {
+  if (currentLanguage() !== 'zh-CN') {
+    return new Intl.DateTimeFormat(currentLanguage(), { weekday: 'short', timeZone: tz }).format(ms);
+  }
   return `周${WEEKDAY_ZH[localParts(ms, tz).weekdayFromMonday] ?? ''}`;
 }
 

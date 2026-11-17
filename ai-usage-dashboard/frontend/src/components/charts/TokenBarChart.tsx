@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "../../i18n";
 import type { UsageBucket, UsageSeries } from '../../api/types';
 import {
   canStack,
@@ -20,13 +21,13 @@ const TOP = 20;
 const STACK_FILLS = ['var(--stack-1)', 'var(--stack-2)', 'var(--stack-3)', 'var(--stack-4)'];
 
 const KIND_TEXT: Record<BucketKind, string> = {
-  future: '尚未发生',
-  no_records_unknown: '无记录 · 覆盖未知 · 不计为 0',
-  no_records_gap: '采集缺口 · 不计为 0',
-  no_records_covered: '已覆盖 · 无活动记录',
-  unknown_total: '有记录 · token 用量未知',
-  partial_total: '已知小计（部分事件用量未知）',
-  known_total: '合计',
+  get future() { return translate("尚未发生"); },
+  get no_records_unknown() { return translate("无记录 · 覆盖未知 · 不计为 0"); },
+  get no_records_gap() { return translate("采集缺口 · 不计为 0"); },
+  get no_records_covered() { return translate("已覆盖 · 无活动记录"); },
+  get unknown_total() { return translate("有记录 · token 用量未知"); },
+  get partial_total() { return translate("已知小计（部分事件用量未知）"); },
+  get known_total() { return translate("合计"); },
 };
 
 interface Props {
@@ -49,19 +50,20 @@ interface Props {
 
 function bucketTip(b: UsageBucket, tz: string): string {
   const k = classifyBucket(b);
-  const head = `${fmtRangeLabel(b.from, b.to, tz)}${b.is_partial_bucket ? '（不完整的桶）' : ''}`;
+  const head = `${fmtRangeLabel(b.from, b.to, tz)}${b.is_partial_bucket ? translate("（不完整的桶）") : ''}`;
   const lines = [head, KIND_TEXT[k]];
   const v = plottableTotal(b);
-  if (v !== null) lines.push(`${k === 'partial_total' ? '已知小计' : '合计'} ${fmtTokens(v)} token`);
-  if (b.event_count > 0) lines.push(`事件 ${b.event_count}（已知 ${b.known_total_count} / 未知 ${b.unknown_total_count}）`);
+  if (v !== null) lines.push(`${k === 'partial_total' ? translate("已知小计") : translate("合计")} ${fmtTokens(v)} token`);
+  if (b.event_count > 0) lines.push(translate("事件 {0}（已知 {1} / 未知 {2}）", b.event_count, b.known_total_count, b.unknown_total_count));
   if (v !== null && !canStack(b)) {
     const parts = describeComponents(b.components);
-    lines.push(parts ? `已知分项：${parts}` : '分项未知');
+    lines.push(parts ? translate("已知分项：{0}", parts) : translate("分项未知"));
   }
   return lines.join('\n');
 }
 
 export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, variant = 'bar', plotHeight = 100, quiet = false }: Props) {
+  useLanguage();
   const BASE = TOP + plotHeight;
   const line = variant === 'line';
   const buckets = series.buckets;
@@ -85,7 +87,7 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
   }
 
   const unknownCount = buckets.filter((b) => classifyBucket(b) === 'unknown_total').length;
-  const desc = `${line ? '折线：' : ''}每${series.bucket === 'day' ? '天' : series.bucket === 'hour' ? '小时' : ' 15 分钟'} token 用量。${runs.length ? '部分时段无记录，覆盖未知，不计为 0。' : ''}${unknownCount ? `${unknownCount} 个时段有记录但用量未知。` : ''}`;
+  const desc = translate("{0}每{1} token 用量。{2}{3}", line ? translate("折线：") : '', series.bucket === 'day' ? translate("天") : series.bucket === 'hour' ? translate("小时") : translate(" 15 分钟"), runs.length ? translate("部分时段无记录，覆盖未知，不计为 0。") : '', unknownCount ? translate("{0} 个时段有记录但用量未知。", unknownCount) : '');
 
   return (
     <svg className="chart-svg" viewBox={`0 0 1000 ${BASE + 26}`} role="img" aria-label={desc}>
@@ -120,10 +122,10 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
         .map(([a, b]) => (
           <g key={`nl-${a}`}>
             <rect x={scale.x(a!)} y={TOP} width={scale.x(b!) - scale.x(a!)} height={BASE - TOP} fill="url(#dots-notloaded)">
-              <title>未加载：查询范围之外</title>
+              <title>{translate("未加载：查询范围之外")}</title>
             </rect>
             <text x={(scale.x(a!) + scale.x(b!)) / 2} y={TOP - 6} fontSize={11} fill="var(--text-muted)" textAnchor="middle">
-              未加载
+              {translate("未加载")}
             </text>
           </g>
         ))}
@@ -155,7 +157,7 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
               </rect>
               {bw > 20 && !quiet && (
                 <text x={bx + bw / 2} y={BASE - 6} fontSize={10} fill="var(--text-muted)" textAnchor="middle">
-                  无活动
+                  {translate("无活动")}
                 </text>
               )}
             </g>
@@ -242,7 +244,7 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
       {runs.map((r) =>
         !quiet && scale.x(r.to) - scale.x(r.from) > 40 ? (
           <text key={r.from} x={(scale.x(r.from) + scale.x(r.to)) / 2} y={TOP - 6} fontSize={11} fill="var(--text-muted)" textAnchor="middle">
-            无记录
+            {translate("无记录")}
           </text>
         ) : null,
       )}
@@ -283,7 +285,7 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
               style={{ cursor: 'pointer' }}
               onClick={() => onSelect(b.from, b.to)}
             >
-              <title>{`${bucketTip(b, clock.tz)}\n点击打开这一段的明细`}</title>
+              <title>{translate("{0}\n点击打开这一段的明细", bucketTip(b, clock.tz))}</title>
             </rect>
           ))}
     </svg>
@@ -291,21 +293,22 @@ export function TokenBarChart({ series, scale, clock, axis, onSelect, selected, 
 }
 
 export function TokenLegend() {
+  useLanguage();
   return (
     <span className="legend">
       <span>
         <span className="legend-swatch" style={{ background: 'var(--bar)' }} />
-        合计
+        {translate("合计")}
       </span>
       <span>
         {STACK_FILLS.map((f) => (
           <span key={f} className="legend-swatch" style={{ background: f, marginRight: 0, borderRadius: 0 }} />
         ))}{' '}
-        分项完整时堆叠（未缓存/缓存读/缓存写/输出）
+        {translate("分项完整时堆叠（未缓存/缓存读/缓存写/输出）")}
       </span>
-      <span>≥ 已知小计</span>
-      <span>? 有记录·用量未知</span>
-      <span>▨ 无记录 · 覆盖未知</span>
+      <span>{translate("≥ 已知小计")}</span>
+      <span>{translate("? 有记录·用量未知")}</span>
+      <span>{translate("▨ 无记录 · 覆盖未知")}</span>
     </span>
   );
 }

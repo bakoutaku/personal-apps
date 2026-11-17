@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 import type { TokenComponents, UsageBucket } from '../api/types';
 
 /**
@@ -50,10 +51,10 @@ export const COMPONENT_KEYS = [
 ] as const satisfies readonly (keyof TokenComponents)[];
 
 export const COMPONENT_LABELS: Record<(typeof COMPONENT_KEYS)[number], string> = {
-  uncached_input_tokens: '未缓存输入',
-  cache_read_input_tokens: '缓存读取',
-  cache_write_input_tokens: '缓存写入',
-  output_tokens: '输出',
+  get uncached_input_tokens() { return translate("未缓存输入"); },
+  get cache_read_input_tokens() { return translate("缓存读取"); },
+  get cache_write_input_tokens() { return translate("缓存写入"); },
+  get output_tokens() { return translate("输出"); },
 };
 
 /** 已知分项的文字；未知分项不写成 0。 */

@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "../../i18n";
 import type { Label, Session } from '../../api/types';
 import { fmtDateTimeRel, fmtRangeLabel } from '../../time/tz';
 import type { Clock } from '../common';
@@ -23,6 +24,7 @@ interface Bar {
 
 /** 只读标签轨道：时间段按区间；会话按“范围内首末记录”，标“大致记录范围”，不伪造持续时长。 */
 export function LabelTrack({ labels, sessions, scale, clock }: Props) {
+  useLanguage();
   const bars: Bar[] = [];
   for (const l of labels) {
     if (l.target.kind === 'range') {
@@ -36,8 +38,8 @@ export function LabelTrack({ labels, sessions, scale, clock }: Props) {
         kind: 'range',
         from,
         to,
-        text: ongoing ? `${fmtDateTimeRel(from, clock.asOfMs, clock.tz)}–进行中` : fmtRangeLabel(from, to, clock.tz),
-        title: `时间段标签：${l.name}`,
+        text: ongoing ? translate("{0}–进行中", fmtDateTimeRel(from, clock.asOfMs, clock.tz)) : fmtRangeLabel(from, to, clock.tz),
+        title: translate("时间段标签：{0}", l.name),
       });
     } else {
       const sessionId = l.target.session_id;
@@ -51,14 +53,14 @@ export function LabelTrack({ labels, sessions, scale, clock }: Props) {
         kind: 'session',
         from,
         to,
-        text: `会话 · 大致记录范围 ${fmtDateTimeRel(from, clock.asOfMs, clock.tz)}–${fmtDateTimeRel(to, clock.asOfMs, clock.tz)}`,
-        title: `会话标签：${l.name}（范围内首末记录时间，不是精确起止）`,
+        text: translate("会话 · 大致记录范围 {0}–{1}", fmtDateTimeRel(from, clock.asOfMs, clock.tz), fmtDateTimeRel(to, clock.asOfMs, clock.tz)),
+        title: translate("会话标签：{0}（范围内首末记录时间，不是精确起止）", l.name),
       });
     }
   }
 
   const ed = useLabelEditing();
-  if (bars.length === 0) return <p className="small muted" style={{ margin: 0 }}>这个范围内没有标签。</p>;
+  if (bars.length === 0) return <p className="small muted" style={{ margin: 0 }}>{translate("这个范围内没有标签。")}</p>;
 
   const rowH = 36;
   return (
@@ -74,7 +76,7 @@ export function LabelTrack({ labels, sessions, scale, clock }: Props) {
           <div key={b.id}>
             <div
               className={`label-bar ${b.kind}${ed.writable ? ' clickable' : ''}`}
-              title={ed.writable ? `${b.title}\n点击编辑` : b.title}
+              title={ed.writable ? translate("{0}\n点击编辑", b.title) : b.title}
               style={{ left: `${left}%`, width: `${width}%`, top }}
               role={ed.writable ? 'button' : undefined}
               tabIndex={ed.writable ? 0 : undefined}

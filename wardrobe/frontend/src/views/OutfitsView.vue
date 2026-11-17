@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../api/client";
@@ -14,7 +15,7 @@ const outfits = ref<Outfit[]>([]);
 const total = ref(0);
 const loading = ref(true);
 const showLoading = useDelayedLoading(loading);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const q = ref(typeof route.query.q === "string" ? route.query.q : "");
 let requestId = 0;
 
@@ -37,7 +38,7 @@ async function load(append = false) {
     outfits.value = append ? [...outfits.value, ...page.items] : page.items;
     total.value = page.total;
   } catch (e) {
-    if (id === requestId) error.value = errorMessage(e);
+    if (id === requestId) error.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -73,42 +74,42 @@ function thumbs(o: Outfit): string[] {
 <template>
   <div class="page" :aria-busy="loading">
     <div class="page-head">
-      <h1>穿搭组合 <span class="muted count">{{ loading && !outfits.length ? "" : `${total} 套` }}</span></h1>
-      <RouterLink :to="{ name: 'outfit-new' }" class="btn">新建穿搭</RouterLink>
+      <h1>{{ translate("穿搭组合") }} <span class="muted count">{{ loading && !outfits.length ? "" : translate("{0} 套", total) }}</span></h1>
+      <RouterLink :to="{ name: 'outfit-new' }" class="btn">{{ translate("新建穿搭") }}</RouterLink>
     </div>
     <div class="filters">
-      <input v-model="q" class="input" type="search" placeholder="按名称搜索" aria-label="按名称搜索穿搭" />
-      <select class="input" :value="season" aria-label="季节" @change="setQuery({ season: ($event.target as HTMLSelectElement).value || undefined })">
-        <option value="">全部季节</option>
+      <input v-model="q" class="input" type="search" :placeholder='translate("按名称搜索")' :aria-label='translate("按名称搜索穿搭")' />
+      <select class="input" :value="season" :aria-label='translate("季节")' @change="setQuery({ season: ($event.target as HTMLSelectElement).value || undefined })">
+        <option value="">{{ translate("全部季节") }}</option>
         <option v-for="(t, k) in SEASON_LABELS" :key="k" :value="k">{{ t }}</option>
       </select>
-      <span v-if="tag" class="chip">#{{ tag }} <button type="button" class="link-btn" aria-label="移除标签筛选" @click="setQuery({ tag: undefined })">×</button></span>
+      <span v-if="tag" class="chip">#{{ tag }} <button type="button" class="link-btn" :aria-label='translate("移除标签筛选")' @click="setQuery({ tag: undefined })">×</button></span>
     </div>
-    <p class="load-feedback" role="status">{{ showLoading ? "正在加载…" : "" }}</p>
-    <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
+    <p class="load-feedback" role="status">{{ showLoading ? translate("正在加载…") : "" }}</p>
+    <p v-if="error" class="error-banner" role="alert">{{ error?.() }}</p>
     <ul v-if="outfits.length" class="grid">
       <li v-for="o in outfits" :key="o.id">
         <RouterLink :to="{ name: 'outfit', params: { id: o.id } }" class="card" :data-testid="`outfit-card-${o.id}`">
           <div class="cover" :class="`n${thumbs(o).length}`">
             <img v-for="(u, i) in thumbs(o)" :key="i" :src="u" alt="" loading="lazy" />
-            <span v-if="!thumbs(o).length" class="empty-cover">{{ o.items.length }} 件</span>
+            <span v-if="!thumbs(o).length" class="empty-cover">{{ o.items.length }} {{ translate("件") }}</span>
           </div>
           <div class="meta">
             <strong>{{ o.name }}</strong>
             <span class="muted">
-              {{ o.items.length }} 件<template v-if="o.season"> · {{ label(SEASON_LABELS, o.season) }}</template><template v-if="o.occasion"> · {{ o.occasion }}</template>
+              {{ o.items.length }} {{ translate("件") }}<template v-if="o.season"> · {{ label(SEASON_LABELS, o.season) }}</template><template v-if="o.occasion"> · {{ o.occasion }}</template>
             </span>
-            <span v-if="o.rating" class="stars" :aria-label="`评分 ${o.rating}`">{{ "★".repeat(o.rating) }}</span>
+            <span v-if="o.rating" class="stars" :aria-label="translate('评分 {0}', o.rating)">{{ "★".repeat(o.rating) }}</span>
           </div>
         </RouterLink>
       </li>
     </ul>
     <div v-else-if="!loading && !error" class="empty-note">
-      <p>{{ route.query.q || season || tag ? "没有符合条件的穿搭。" : "还没有穿搭组合。" }}</p>
-      <RouterLink :to="{ name: 'outfit-new' }" class="btn ghost">新建第一套穿搭</RouterLink>
+      <p>{{ route.query.q || season || tag ? translate("没有符合条件的穿搭。") : translate("还没有穿搭组合。") }}</p>
+      <RouterLink :to="{ name: 'outfit-new' }" class="btn ghost">{{ translate("新建第一套穿搭") }}</RouterLink>
     </div>
     <div v-if="outfits.length < total && !loading" class="more">
-      <button type="button" class="btn ghost" @click="load(true)">加载更多（还有 {{ total - outfits.length }} 套）</button>
+      <button type="button" class="btn ghost" @click="load(true)">{{ translate("加载更多（还有") }} {{ total - outfits.length }} {{ translate("套）") }}</button>
     </div>
   </div>
 </template>

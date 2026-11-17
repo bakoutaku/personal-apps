@@ -5,7 +5,7 @@ cd "${0:A:h}"
 mkdir -p build dist
 xcrun swiftc Sources/{CodeHooks,MonitorCore}.swift Tests/CodeHooksTests.swift -o build/code-hook-tests
 ./build/code-hook-tests
-xcrun swiftc Sources/{CodeHooks,MonitorCore,CompletionAnimation,CardPlacement,PetGeometry,EventHistory,MonitorHealth}.swift Tests/CoreTests.swift -o build/core-tests
+xcrun swiftc Sources/{CodeHooks,MonitorCore,CompletionAnimation,CardPlacement,PetGeometry,EventHistory,MonitorHealth,InterfaceLanguage,InterfaceMessages}.swift Tests/CoreTests.swift -o build/core-tests
 ./build/core-tests
 
 stage=$(mktemp -d "${TMPDIR:-/tmp}/companion-preview.XXXXXX")

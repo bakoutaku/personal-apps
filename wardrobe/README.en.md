@@ -4,6 +4,10 @@ English · [简体中文](README.md) · [日本語](README.ja.md)
 
 Manage clothing, products, outfits and purchases with photos, filters, tags, import previews, and a REST API. Local suggestions require review before application. GPT and Claude assisted with implementation and review of the Vue, TypeScript, FastAPI and SQLite app.
 
+## Interface language
+
+Use the selector at the right of the top navigation to choose Simplified Chinese, Japanese, or English. The interface defaults to Simplified Chinese and remembers the selection in the same browser. Saved item names, notes, and other record content retain their original text.
+
 ## Screenshots
 
 The local demo library with fictional clothing records and sample images.

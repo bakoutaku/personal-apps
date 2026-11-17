@@ -4,6 +4,10 @@ English · [简体中文](README.md) · [日本語](README.ja.md)
 
 Local token usage, recent activity, calendar history, and observed Codex quota. Claude assisted on the React and TypeScript frontend and GPT on the Python and SQLite backend. The macOS source preview omits the upstream GPT dragon artwork and old installers. Windows has yet to be verified on a physical machine.
 
+## Interface language
+
+Use the language selector at the top right to choose Simplified Chinese, Japanese, or English. The interface defaults to Simplified Chinese and remembers the selection in the same browser.
+
 ## Screenshots
 
 Actual running views using synthetic fixtures.

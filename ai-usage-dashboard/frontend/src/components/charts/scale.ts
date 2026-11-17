@@ -1,3 +1,4 @@
+import { t as translate } from "../../i18n";
 import { localParts } from '../../time/tz';
 
 /** 所有图表共用的横轴：viewBox 宽 1000，绘图区 [X0, X1]。标签轨道用同一比例换算百分比。 */
@@ -55,7 +56,7 @@ export function calendarTicks(view: 'day' | 'week' | 'month', from: number, to: 
   for (let i = 0; i < 40 && t < to; i++) {
     const p = localParts(t, tz);
     if (view === 'week' || [1, 8, 15, 22, 29].includes(p.day)) {
-      const wd = ['一', '二', '三', '四', '五', '六', '日'][p.weekdayFromMonday] ?? '';
+      const wd = [translate("一"), translate("二"), translate("三"), translate("四"), translate("五"), translate("六"), translate("日")][p.weekdayFromMonday] ?? '';
       out.push({ t, label: view === 'week' ? `${pad(p.month)}/${pad(p.day)} ${wd}` : `${pad(p.month)}/${pad(p.day)}` });
     }
     const probe = t + 30 * 3600_000; // 一定落在下一个当地日内（23/25 小时的日子也成立）

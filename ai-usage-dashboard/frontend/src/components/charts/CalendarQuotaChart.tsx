@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "../../i18n";
 import type { QuotaSnapshot, QuotaWindow, QuotaWindowSummary } from '../../api/types';
 import { boundarySourceText, slotTitle } from '../../domain/quota';
 import { fmtDateTimeRel, fmtRangeLabel } from '../../time/tz';
@@ -23,6 +24,7 @@ interface Props {
  * 不相加、不跨窗口连线；日视图另画原始观测点。
  */
 export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock }: Props) {
+  useLanguage();
   const byId = new Map(windows.map((w) => [w.id, w]));
   const yMax = Math.max(100, ...summaries.map((s) => s.max_observed_percent ?? 0), ...(snapshots ?? []).map((s) => s.used_percent ?? 0));
   const y = (v: number) => BOTTOM - (v / yMax) * (BOTTOM - TOP);
@@ -45,7 +47,7 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
     .sort((p, q) => Number(q.long) - Number(p.long));
 
   // 百分比标签：每个窗口一个，避让后放不下的收起到图下的“+N”列表（数据不合并、不相加）
-  const labelSegs: (LabelSeg & { tipRange: string })[] = segs
+  const labelSegs: (LabelSeg & { tipRange: string; percent: number })[] = segs
     .filter((g) => g.s.max_observed_percent !== null)
     .map((g) => {
       const x1 = scale.x(g.a);
@@ -55,9 +57,10 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
         x1,
         x2: Math.max(x1 + 4, scale.x(g.b)),
         y: y(v),
-        text: g.long ? `七天 ${v}%` : `${v}%`,
+        text: g.long ? translate("七天 {0}%", v) : `${v}%`,
         long: g.long,
-        tipRange: `${g.long ? '七天' : '五小时'} · ${g.known ? fmtRangeLabel(g.w!.starts_at!, g.w!.ends_at!, clock.tz) : '边界未知'}`,
+        percent: v,
+        tipRange: `${g.long ? translate("七天") : translate("五小时")} · ${g.known ? fmtRangeLabel(g.w!.starts_at!, g.w!.ends_at!, clock.tz) : translate("边界未知")}`,
       };
     })
     // 越新的窗口越优先显示；同一时间短窗口优先
@@ -65,8 +68,8 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
   const labels = layoutLabels(labelSegs, { left: X0, right: 998, top: 2, bottom: 188 });
 
   const desc = summaries.length
-    ? `所选范围内 ${summaries.length} 个额度窗口的最高观测值，各窗口分开显示，不相加`
-    : '所选范围内没有额度观测';
+    ? translate("所选范围内 {0} 个额度窗口的最高观测值，各窗口分开显示，不相加", summaries.length)
+    : translate("所选范围内没有额度观测");
 
   return (
     <>
@@ -88,11 +91,11 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
         const v = s.max_observed_percent;
         const yy = v === null ? BOTTOM : y(v);
         const tip = [
-          `${w ? slotTitle(w) : '窗口'}${w ? ` · ${w.slot}` : ''}`,
-          known ? fmtRangeLabel(w!.starts_at!, w!.ends_at!, clock.tz) : '起止边界未知（按首末观测点画）',
-          w && known ? `开始：${boundarySourceText('start', w)}；结束：${boundarySourceText('end', w)}` : '',
-          v === null ? '所选范围内没有已知数值' : `所选范围内最高观测 ${v}%（不是实际峰值或最终消耗）`,
-          `${s.sample_count} 个观测点${s.first_sample_at && s.last_sample_at ? `：${t(s.first_sample_at)} – ${t(s.last_sample_at)}` : ''}`,
+          `${w ? slotTitle(w) : translate("窗口")}${w ? ` · ${w.slot}` : ''}`,
+          known ? fmtRangeLabel(w!.starts_at!, w!.ends_at!, clock.tz) : translate("起止边界未知（按首末观测点画）"),
+          w && known ? translate("开始：{0}；结束：{1}", boundarySourceText('start', w), boundarySourceText('end', w)) : '',
+          v === null ? translate("所选范围内没有已知数值") : translate("所选范围内最高观测 {0}%（不是实际峰值或最终消耗）", v),
+          translate("{0} 个观测点{1}", s.sample_count, s.first_sample_at && s.last_sample_at ? `：${t(s.first_sample_at)} – ${t(s.last_sample_at)}` : ''),
         ]
           .filter(Boolean)
           .join('\n');
@@ -127,7 +130,7 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
               fill={long ? 'var(--surface)' : 'var(--accent)'}
               stroke={long ? 'var(--line-derived)' : 'none'}
             >
-              <title>{`${p.used_percent}% · ${p.time_basis === 'observed_at' ? '观测于' : '日志记录于'} ${t(p.effective_at)}`}</title>
+              <title>{`${p.used_percent}% · ${p.time_basis === 'observed_at' ? translate("观测于") : translate("日志记录于")} ${t(p.effective_at)}`}</title>
             </circle>
           );
         })}
@@ -135,7 +138,7 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
       {nowInside && <line x1={nowX} y1={10} x2={nowX} y2={174} stroke="var(--text)" />}
 
       {labels.placed.map((l) => {
-        const long = l.text.startsWith('七天');
+        const long = (byId.get(l.id)?.duration_seconds ?? 0) > 86400;
         return (
           <text key={l.id} x={l.x} y={l.y} fontSize={11} fill={long ? 'var(--text-muted)' : 'var(--text)'} className="mono label-halo" pointerEvents="none">
             {l.text}
@@ -144,17 +147,17 @@ export function CalendarQuotaChart({ summaries, windows, snapshots, scale, clock
       })}
       {summaries.length === 0 && (
         <text x={(X0 + X1) / 2} y={100} fontSize={12} fill="var(--text-muted)" textAnchor="middle">
-          所选范围内没有额度观测记录（不代表没有使用）
+          {translate("所选范围内没有额度观测记录（不代表没有使用）")}
         </text>
       )}
     </svg>
     {labels.hidden.length > 0 && (
       <details className="chart-more">
-        <summary>另有 {labels.hidden.length} 个窗口数值</summary>
+        <summary>{translate("另有")} {labels.hidden.length} {translate("个窗口数值")}</summary>
         <ul>
           {labels.hidden.map((h) => (
             <li key={h.id} className="num">
-              {(h as (typeof labelSegs)[number]).tipRange} · {h.text.replace('七天 ', '')}
+              {(h as (typeof labelSegs)[number]).tipRange} · {`${(h as (typeof labelSegs)[number]).percent}%`}
             </li>
           ))}
         </ul>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { dismiss, toasts } from "../lib/toast";
 
 async function run(id: number, action: () => void | Promise<void>) {
@@ -12,7 +13,7 @@ async function run(id: number, action: () => void | Promise<void>) {
     <div v-for="t in toasts" :key="t.id" class="toast" :class="t.kind" :role="t.kind === 'error' ? 'alert' : 'status'">
       <span class="text">{{ t.text }}</span>
       <button v-if="t.action" type="button" class="act" @click="run(t.id, t.action.run)">{{ t.action.label }}</button>
-      <button type="button" class="close" aria-label="关闭提示" @click="dismiss(t.id)">×</button>
+      <button type="button" class="close" :aria-label='translate("关闭提示")' @click="dismiss(t.id)">×</button>
     </div>
   </div>
 </template>

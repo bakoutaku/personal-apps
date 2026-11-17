@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 import type { DataAdapter, Fetched } from '../api/adapter';
 import type {
   Account,
@@ -138,7 +139,7 @@ export async function loadDashboard(adapter: DataAdapter, route: Omit<Route, 'pa
     calView && activity && route.range && route.range.from >= activity.from && route.range.to <= activity.to
       ? route.range
       : null;
-  if (calView && route.range && !sel) notices.push('选中的时间段不在当前范围内，已忽略。');
+  if (calView && route.range && !sel) notices.push(translate("选中的时间段不在当前范围内，已忽略。"));
   const selectionUsage = sel ? loadUsage(sel.from, sel.to, 'hour') : null;
 
   const [sources, pools] = await Promise.all([adapter.getSources(scope), adapter.getQuotaPools(scope)]);
@@ -146,7 +147,7 @@ export async function loadDashboard(adapter: DataAdapter, route: Omit<Route, 'pa
   let pool: QuotaPool | null = null;
   if (pools.ok && pools.data.length > 0) {
     pool = (route.pool && pools.data.find((p) => p.id === route.pool)) || null;
-    if (route.pool && !pool) notices.push('链接里的额度池不存在，已回到默认额度池。');
+    if (route.pool && !pool) notices.push(translate("链接里的额度池不存在，已回到默认额度池。"));
     pool ??= pools.data.find((p) => p.id === boot?.pool_id) ?? pools.data[0] ?? null;
   }
 
@@ -162,7 +163,7 @@ export async function loadDashboard(adapter: DataAdapter, route: Omit<Route, 'pa
     windows = await adapter.getQuotaWindows({ ...scope, pool_id: pool.id, from, to, timezone: tz });
     if (windows.ok) {
       selectedWindow = (route.window && windows.data.find((w) => w.id === route.window)) || null;
-      if (route.window && !selectedWindow) notices.push('链接里的额度窗口不在当前结果中，已回到默认窗口。');
+      if (route.window && !selectedWindow) notices.push(translate("链接里的额度窗口不在当前结果中，已回到默认窗口。"));
       selectedWindow ??=
         windows.data.find((w) => w.id === boot?.window_id && hasFullBounds(w)) ?? defaultWindow(windows.data) ?? null;
     }
@@ -228,7 +229,7 @@ export async function loadDashboard(adapter: DataAdapter, route: Omit<Route, 'pa
   const all: (Fetched<unknown> | null)[] = [health, accounts, sources, pools, windows, ...parts];
   const metas: Meta[] = all.flatMap((x) => (x && x.ok ? [x.meta] : []));
   if (new Set(metas.map((m) => m.data_mode)).size > 1) {
-    return { ok: false, reason: 'mode_mismatch', detail: 'mock 与 live 数据不能混用' };
+    return { ok: false, reason: 'mode_mismatch', detail: translate("mock 与 live 数据不能混用") };
   }
   const revisions = new Set(metas.map((m) => m.data_revision));
   if (revisions.size > 1) {

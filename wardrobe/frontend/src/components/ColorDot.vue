@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 颜色圆点：优先用实际 HEX；没有时用按颜色名称 / 色号推算的示意色（后端 swatch），再没有用颜色族的代表色
 import { computed } from "vue";
 import { colorSwatch } from "../lib/labels";
@@ -9,7 +10,7 @@ const props = withDefaults(
 );
 const background = computed(() => props.hex ?? props.swatch ?? colorSwatch(props.family) ?? "transparent");
 const empty = computed(() => !props.hex && !props.swatch && !colorSwatch(props.family));
-const title = computed(() => (!props.hex && (props.swatch || colorSwatch(props.family)) ? "示意色（按颜色名称推算，不是实测颜色）" : undefined));
+const title = computed(() => (!props.hex && (props.swatch || colorSwatch(props.family)) ? translate("示意色（按颜色名称推算，不是实测颜色）") : undefined));
 </script>
 
 <template>

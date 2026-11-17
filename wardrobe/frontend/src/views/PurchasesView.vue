@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../api/client";
@@ -14,7 +15,7 @@ const purchases = ref<Purchase[]>([]);
 const total = ref(0);
 const loading = ref(true);
 const showLoading = useDelayedLoading(loading);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const q = ref("");
 let requestId = 0;
 
@@ -37,7 +38,7 @@ async function load(append = false) {
     purchases.value = append ? [...purchases.value, ...page.items] : page.items;
     total.value = page.total;
   } catch (e) {
-    if (id === requestId) error.value = errorMessage(e);
+    if (id === requestId) error.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -75,37 +76,37 @@ const unmatched = (p: Purchase) => p.lines.filter((l) => l.product_match !== "co
 <template>
   <div class="page" :aria-busy="loading">
     <div class="page-head">
-      <h1>购买记录 <span class="muted count">{{ loading && !purchases.length ? "" : `${total} 笔` }}</span></h1>
-      <RouterLink :to="{ name: 'purchase-new' }" class="btn">记录一笔购买</RouterLink>
+      <h1>{{ translate("购买记录") }} <span class="muted count">{{ loading && !purchases.length ? "" : translate("{0} 笔", total) }}</span></h1>
+      <RouterLink :to="{ name: 'purchase-new' }" class="btn">{{ translate("记录一笔购买") }}</RouterLink>
     </div>
     <div class="filters">
-      <input v-model="q" class="input" type="search" placeholder="订单号、小票名称或编号、备注" aria-label="搜索购买记录" />
-      <select class="input" :value="str(route.query.channel)" aria-label="渠道" @change="setQuery({ channel: ($event.target as HTMLSelectElement).value })">
-        <option value="">全部渠道</option>
+      <input v-model="q" class="input" type="search" :placeholder='translate("订单号、小票名称或编号、备注")' :aria-label='translate("搜索购买记录")' />
+      <select class="input" :value="str(route.query.channel)" :aria-label='translate("渠道")' @change="setQuery({ channel: ($event.target as HTMLSelectElement).value })">
+        <option value="">{{ translate("全部渠道") }}</option>
         <option v-for="(t, k) in CHANNEL_LABELS" :key="k" :value="k">{{ t }}</option>
       </select>
-      <label class="date">从 <input type="date" class="input" :value="str(route.query.date_from)" @change="setQuery({ date_from: ($event.target as HTMLInputElement).value })" /></label>
-      <label class="date">到 <input type="date" class="input" :value="str(route.query.date_to)" @change="setQuery({ date_to: ($event.target as HTMLInputElement).value })" /></label>
+      <label class="date">{{ translate("从") }} <input type="date" class="input" :value="str(route.query.date_from)" @change="setQuery({ date_from: ($event.target as HTMLInputElement).value })" /></label>
+      <label class="date">{{ translate("到") }} <input type="date" class="input" :value="str(route.query.date_to)" @change="setQuery({ date_to: ($event.target as HTMLInputElement).value })" /></label>
     </div>
-    <p class="load-feedback" role="status">{{ showLoading ? "正在加载…" : "" }}</p>
-    <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
+    <p class="load-feedback" role="status">{{ showLoading ? translate("正在加载…") : "" }}</p>
+    <p v-if="error" class="error-banner" role="alert">{{ error?.() }}</p>
     <div v-if="purchases.length" class="table-wrap">
       <table class="data">
         <thead>
-          <tr><th>日期</th><th>店铺 / 订单</th><th>渠道</th><th>内容</th><th class="num">金额</th></tr>
+          <tr><th>{{ translate("日期") }}</th><th>{{ translate("店铺 / 订单") }}</th><th>{{ translate("渠道") }}</th><th>{{ translate("内容") }}</th><th class="num">{{ translate("金额") }}</th></tr>
         </thead>
         <tbody>
           <tr v-for="p in purchases" :key="p.id" :data-testid="`purchase-row-${p.id}`">
             <td class="nowrap"><RouterLink :to="{ name: 'purchase', params: { id: p.id } }">{{ p.purchased_on }}</RouterLink></td>
             <td>
-              <RouterLink :to="{ name: 'purchase', params: { id: p.id } }">{{ p.store_name ?? "未记录店铺" }}</RouterLink>
+              <RouterLink :to="{ name: 'purchase', params: { id: p.id } }">{{ p.store_name ?? translate("未记录店铺") }}</RouterLink>
               <div v-if="p.order_no" class="muted mono">{{ p.order_no }}</div>
             </td>
             <td>{{ label(CHANNEL_LABELS, p.channel) }}</td>
             <td>
-              {{ p.lines.length }} 条明细 · {{ itemCount(p) }} 件
-              <span v-if="unmatched(p)" class="badge warn">{{ unmatched(p) }} 条未确认商品</span>
-              <div class="muted names">{{ p.lines.map((l) => l.product?.name_ja ?? l.name_raw ?? "（未命名）").join("、") }}</div>
+              {{ p.lines.length }} {{ translate("条明细 ·") }} {{ itemCount(p) }} {{ translate("件") }}
+              <span v-if="unmatched(p)" class="badge warn">{{ unmatched(p) }} {{ translate("条未确认商品") }}</span>
+              <div class="muted names">{{ p.lines.map((l) => l.product?.name_ja ?? l.name_raw ?? translate("（未命名）")).join("、") }}</div>
             </td>
             <td class="num">{{ yen(lineTotal(p), p.currency) }}</td>
           </tr>
@@ -113,11 +114,11 @@ const unmatched = (p: Purchase) => p.lines.filter((l) => l.product_match !== "co
       </table>
     </div>
     <div v-else-if="!loading && !error" class="empty-note">
-      <p>没有购买记录。</p>
-      <RouterLink :to="{ name: 'purchase-new' }" class="btn ghost">记录一笔购买</RouterLink>
+      <p>{{ translate("没有购买记录。") }}</p>
+      <RouterLink :to="{ name: 'purchase-new' }" class="btn ghost">{{ translate("记录一笔购买") }}</RouterLink>
     </div>
     <div v-if="purchases.length < total && !loading" class="more">
-      <button type="button" class="btn ghost" @click="load(true)">加载更多（还有 {{ total - purchases.length }} 笔）</button>
+      <button type="button" class="btn ghost" @click="load(true)">{{ translate("加载更多（还有") }} {{ total - purchases.length }} {{ translate("笔）") }}</button>
     </div>
   </div>
 </template>

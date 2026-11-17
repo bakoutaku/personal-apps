@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 快捷分组按钮（「T恤」「衬衫」「半袖」…）：衣橱列表与挑选衣物共用。
 // 分组定义与件数来自后端 /items/facets 的 groups；没有衣物的分组不显示（当前选中的除外）。
 import { computed, ref, watch } from "vue";
@@ -26,8 +27,8 @@ function pick(key: string) {
 </script>
 
 <template>
-  <div v-if="groups?.length" class="quick" role="group" aria-label="按种类筛选" data-testid="quick-groups">
-    <button type="button" class="q" :aria-pressed="selected === null" @click="emit('select', null)">全部</button>
+  <div v-if="groups?.length" class="quick" role="group" :aria-label='translate("按种类筛选")' data-testid="quick-groups">
+    <button type="button" class="q" :aria-pressed="selected === null" @click="emit('select', null)">{{ translate("全部") }}</button>
     <button
       v-for="g in main"
       :key="g.key"
@@ -37,11 +38,11 @@ function pick(key: string) {
       :data-testid="`group-${g.key}`"
       @click="pick(g.key)"
     >
-      {{ g.label }}<span class="n">{{ g.count }}</span>
+      {{ translate(g.label) }}<span class="n">{{ g.count }}</span>
     </button>
     <template v-if="more.length">
       <button type="button" class="q toggle" :aria-expanded="showMore" data-testid="group-more" @click="showMore = !showMore">
-        更多{{ showMore ? "▴" : "▾" }}
+        {{ translate("更多") }}{{ showMore ? "▴" : "▾" }}
       </button>
       <template v-if="showMore">
         <button
@@ -53,7 +54,7 @@ function pick(key: string) {
           :data-testid="`group-${g.key}`"
           @click="pick(g.key)"
         >
-          {{ g.label }}<span class="n">{{ g.count }}</span>
+          {{ translate(g.label) }}<span class="n">{{ g.count }}</span>
         </button>
       </template>
     </template>

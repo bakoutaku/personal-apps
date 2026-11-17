@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 购买记录：新建（含多条明细，可同时生成衣物）与查看/编辑。退货在衣物上记录，购买记录本身保持原样。
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
@@ -70,7 +71,7 @@ async function load(keepDrafts = false) {
     const keepHead = keepDrafts && editingHead.value && Object.keys(headChanges.value).length > 0;
     purchase.value = p;
     if (!keepHead) resetHead(p);
-    document.title = `购买 ${p.purchased_on} · Wardrobe`;
+    document.title = translate("购买 {0} · Wardrobe", p.purchased_on);
   } catch (e) {
     if (id === requestId) error.value = errorMessage(e);
   } finally {
@@ -105,7 +106,7 @@ const dirty = computed(() => {
   return (editingHead.value && Object.keys(headChanges.value).length > 0) || editingLine.value !== null || addingLine.value;
 });
 onBeforeRouteLeave(() => {
-  if (dirty.value && !saved && !window.confirm("有尚未保存的修改，确定离开吗？")) return false;
+  if (dirty.value && !saved && !window.confirm(translate("有尚未保存的修改，确定离开吗？"))) return false;
 });
 
 async function run(fn: () => Promise<unknown>, done: string, after?: () => void) {
@@ -131,7 +132,7 @@ async function createPurchase() {
   error.value = null;
   errors.value = Object.assign({}, ...newLines.value.map((l, i) => lineErrors(l, `lines.${i}.`)));
   if (Object.keys(errors.value).length) {
-    error.value = "请修正标出的字段";
+    error.value = translate("请修正标出的字段");
     return;
   }
   busy.value = true;
@@ -139,7 +140,7 @@ async function createPurchase() {
     const lines = newLines.value.map(linePayload);
     const created = await api.createPurchase({ ...headPayload(), lines, create_items: createItems.value && lines.length > 0 });
     saved = true;
-    notify(createItems.value ? "已记录购买，并生成了对应的衣物" : "已记录购买");
+    notify(createItems.value ? translate("已记录购买，并生成了对应的衣物") : translate("已记录购买"));
     await router.push({ name: "purchase", params: { id: created.id } });
   } catch (e) {
     error.value = errorMessage(e);
@@ -150,7 +151,7 @@ async function createPurchase() {
 }
 
 const saveHead = () =>
-  run(() => api.updatePurchase(purchase.value!.id, { version: purchase.value!.version, ...headChanges.value }), "已保存", () => (editingHead.value = false));
+  run(() => api.updatePurchase(purchase.value!.id, { version: purchase.value!.version, ...headChanges.value }), translate("已保存"), () => (editingHead.value = false));
 
 function startEditLine(l: PurchaseLine) {
   editingLine.value = l.id;
@@ -167,25 +168,25 @@ function lineChanges(l: PurchaseLine): Record<string, unknown> {
 
 function invalid(d: LineDraft): boolean {
   errors.value = lineErrors(d);
-  if (Object.keys(errors.value).length) error.value = "请修正标出的字段";
+  if (Object.keys(errors.value).length) error.value = translate("请修正标出的字段");
   return Object.keys(errors.value).length > 0;
 }
 
 const saveLine = (l: PurchaseLine) =>
   invalid(lineEdit.value) ||
-  run(() => api.updateLine(l.id, { version: l.version, ...lineChanges(l) }), "已保存明细", () => (editingLine.value = null));
+  run(() => api.updateLine(l.id, { version: l.version, ...lineChanges(l) }), translate("已保存明细"), () => (editingLine.value = null));
 const toggleLineVerify = (l: PurchaseLine) =>
-  run(() => api.verifyLine(l.id, l.version!, l.verification !== "verified"), l.verification === "verified" ? "已取消核实" : "已核实明细");
+  run(() => api.verifyLine(l.id, l.version!, l.verification !== "verified"), l.verification === "verified" ? translate("已取消核实") : translate("已核实明细"));
 const deleteLine = (l: PurchaseLine) => {
-  if (!window.confirm("删除这条明细？仍有衣物关联时不能删除。")) return;
-  return run(() => api.deleteLine(l.id, purchase.value!.version), "已删除明细");
+  if (!window.confirm(translate("删除这条明细？仍有衣物关联时不能删除。"))) return;
+  return run(() => api.deleteLine(l.id, purchase.value!.version), translate("已删除明细"));
 };
-const createLineItem = (l: PurchaseLine) => run(() => api.createItem({ purchase_line_id: l.id }), "已为这条明细添加一件衣物");
+const createLineItem = (l: PurchaseLine) => run(() => api.createItem({ purchase_line_id: l.id }), translate("已为这条明细添加一件衣物"));
 const submitAddLine = () =>
   invalid(addLine.value) ||
   run(
     () => api.addLine(purchase.value!.id, { version: purchase.value!.version, ...linePayload(addLine.value), create_items: addCreateItems.value && !!addLine.value.product_id }),
-    "已追加明细",
+    translate("已追加明细"),
     () => {
       addingLine.value = false;
       addLine.value = emptyLine();
@@ -203,22 +204,22 @@ async function openMatch(l: PurchaseLine) {
   }
 }
 const confirmMatch = (l: PurchaseLine, product: { id: number }) =>
-  run(() => api.matchLine(l.id, { version: l.version, product_id: product.id, product_match: "confirmed" }), "已确认商品", () => (matching.value = null));
+  run(() => api.matchLine(l.id, { version: l.version, product_id: product.id, product_match: "confirmed" }), translate("已确认商品"), () => (matching.value = null));
 
 async function removePurchase() {
   const p = purchase.value;
-  if (!p || !window.confirm("删除这笔购买记录？仍有衣物关联时不能删除。")) return;
+  if (!p || !window.confirm(translate("删除这笔购买记录？仍有衣物关联时不能删除。"))) return;
   busy.value = true;
   try {
     await api.deletePurchase(p.id, p.version);
     const deletedVersion = p.version + 1;
-    notify("已删除购买记录", {
+    notify(translate("已删除购买记录"), {
       action: {
-        label: "撤销",
+        label: translate("撤销"),
         run: async () => {
           try {
             await api.restorePurchase(p.id, deletedVersion);
-            notify("已恢复购买记录");
+            notify(translate("已恢复购买记录"));
             await router.push({ name: "purchase", params: { id: p.id } });
           } catch (e) {
             notify(errorMessage(e), { kind: "error" });
@@ -237,12 +238,12 @@ async function removePurchase() {
 
 function reasonText(r: string): string {
   const [kind, value] = r.split(":");
-  if (kind === "name_similarity") return `名称相似 ${Math.round(Number(value) * 100)}%`;
-  if (kind === "identifier") return "小票编号与商品番号相同";
+  if (kind === "name_similarity") return translate("名称相似 {0}%", Math.round(Number(value) * 100));
+  if (kind === "identifier") return translate("小票编号与商品番号相同");
   return r;
 }
 const productName = (l: PurchaseLine) => l.product?.name_ja || l.product?.name_zh || l.product?.name_en || null;
-const MATCH_LABELS: Record<string, string> = { confirmed: "已确认", suggested: "待确认", unmatched: "未匹配" };
+const MATCH_LABELS: Record<string, string> = { confirmed: translate("已确认"), suggested: translate("待确认"), unmatched: translate("未匹配") };
 const total = computed(() => {
   const p = purchase.value;
   if (!p) return null;
@@ -252,42 +253,42 @@ const total = computed(() => {
 
 <template>
   <div class="page">
-    <RouterLink :to="{ name: 'purchases' }" class="link-btn">← 全部购买记录</RouterLink>
-    <p v-if="loading" class="muted">加载中…</p>
+    <RouterLink :to="{ name: 'purchases' }" class="link-btn">{{ translate("← 全部购买记录") }}</RouterLink>
+    <p v-if="loading" class="muted">{{ translate("加载中…") }}</p>
 
     <!-- 新建 -->
     <form v-else-if="isNew" novalidate @submit.prevent="createPurchase">
-      <div class="page-head"><h1>记录一笔购买</h1></div>
+      <div class="page-head"><h1>{{ translate("记录一笔购买") }}</h1></div>
       <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
       <section class="panel">
-        <h2>购买信息</h2>
+        <h2>{{ translate("购买信息") }}</h2>
         <div class="form-grid">
-          <label class="field"><span>日期（必填）</span><input v-model="head.purchased_on" type="date" required :aria-invalid="!!errors.purchased_on" /></label>
+          <label class="field"><span>{{ translate("日期（必填）") }}</span><input v-model="head.purchased_on" type="date" required :aria-invalid="!!errors.purchased_on" /></label>
           <label class="field">
-            <span>渠道</span>
+            <span>{{ translate("渠道") }}</span>
             <select v-model="head.channel"><option v-for="(t, k) in CHANNEL_LABELS" :key="k" :value="k">{{ t }}</option></select>
           </label>
-          <label class="field"><span>店铺</span><input v-model="head.store_name" placeholder="例如 UNIQLO 银座店" /></label>
-          <label class="field"><span>订单号 / 小票号</span><input v-model="head.order_no" /></label>
-          <label class="field"><span>实付总额</span><input v-model="head.total_amount" type="number" min="0" inputmode="numeric" /></label>
-          <label class="field"><span>币种</span><input v-model="head.currency" maxlength="3" :aria-invalid="!!errors.currency" /></label>
-          <label class="field wide"><span>备注</span><input v-model="head.notes" /></label>
+          <label class="field"><span>{{ translate("店铺") }}</span><input v-model="head.store_name" :placeholder='translate("例如 UNIQLO 银座店")' /></label>
+          <label class="field"><span>{{ translate("订单号 / 小票号") }}</span><input v-model="head.order_no" /></label>
+          <label class="field"><span>{{ translate("实付总额") }}</span><input v-model="head.total_amount" type="number" min="0" inputmode="numeric" /></label>
+          <label class="field"><span>{{ translate("币种") }}</span><input v-model="head.currency" maxlength="3" :aria-invalid="!!errors.currency" /></label>
+          <label class="field wide"><span>{{ translate("备注") }}</span><input v-model="head.notes" /></label>
         </div>
       </section>
       <section v-for="(_line, i) in newLines" :key="i" class="panel">
         <div class="panel-head">
-          <h2>明细 {{ i + 1 }}</h2>
-          <button v-if="newLines.length > 1" type="button" class="link-btn" @click="newLines.splice(i, 1)">删除这条</button>
+          <h2>{{ translate("明细") }} {{ i + 1 }}</h2>
+          <button v-if="newLines.length > 1" type="button" class="link-btn" @click="newLines.splice(i, 1)">{{ translate("删除这条") }}</button>
         </div>
         <PurchaseLineForm v-model="newLines[i]!" :errors="errors" :prefix="`lines.${i}.`" />
       </section>
       <div class="actions add-row">
-        <button type="button" class="btn ghost small" @click="newLines.push(emptyLine())">再加一条明细</button>
-        <label class="field check"><input v-model="createItems" type="checkbox" /><span>按数量自动生成衣物（需要每条明细都选择了商品）</span></label>
+        <button type="button" class="btn ghost small" @click="newLines.push(emptyLine())">{{ translate("再加一条明细") }}</button>
+        <label class="field check"><input v-model="createItems" type="checkbox" /><span>{{ translate("按数量自动生成衣物（需要每条明细都选择了商品）") }}</span></label>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn" :disabled="busy || !head.purchased_on">{{ busy ? "保存中…" : "保存购买记录" }}</button>
-        <RouterLink :to="{ name: 'purchases' }" class="btn ghost">取消</RouterLink>
+        <button type="submit" class="btn" :disabled="busy || !head.purchased_on">{{ busy ? translate("保存中…") : translate("保存购买记录") }}</button>
+        <RouterLink :to="{ name: 'purchases' }" class="btn ghost">{{ translate("取消") }}</RouterLink>
       </div>
     </form>
 
@@ -297,52 +298,52 @@ const total = computed(() => {
     <template v-else-if="purchase">
       <div class="page-head">
         <div>
-          <div class="muted">购买 #{{ purchase.id }} · {{ label(CHANNEL_LABELS, purchase.channel) }}</div>
+          <div class="muted">{{ translate("购买 #") }}{{ purchase.id }} · {{ label(CHANNEL_LABELS, purchase.channel) }}</div>
           <h1>{{ purchase.purchased_on }} {{ purchase.store_name ?? "" }}</h1>
         </div>
         <div class="actions">
-          <button type="button" class="btn ghost small" :disabled="busy" @click="editingHead = !editingHead">{{ editingHead ? "取消编辑" : "编辑购买信息" }}</button>
-          <button type="button" class="btn danger small" :disabled="busy" @click="removePurchase">删除</button>
+          <button type="button" class="btn ghost small" :disabled="busy" @click="editingHead = !editingHead">{{ editingHead ? translate("取消编辑") : translate("编辑购买信息") }}</button>
+          <button type="button" class="btn danger small" :disabled="busy" @click="removePurchase">{{ translate("删除") }}</button>
         </div>
       </div>
       <p v-if="error" class="error-banner" role="alert">
         {{ error }}
-        <button v-if="conflict" type="button" class="link-btn" @click="load()">重新载入（放弃未保存修改）</button>
+        <button v-if="conflict" type="button" class="link-btn" @click="load()">{{ translate("重新载入（放弃未保存修改）") }}</button>
       </p>
 
       <form v-if="editingHead" class="panel" novalidate @submit.prevent="saveHead">
         <div class="form-grid">
-          <label class="field"><span>日期</span><input v-model="head.purchased_on" type="date" required /></label>
+          <label class="field"><span>{{ translate("日期") }}</span><input v-model="head.purchased_on" type="date" required /></label>
           <label class="field">
-            <span>渠道</span>
+            <span>{{ translate("渠道") }}</span>
             <select v-model="head.channel"><option v-for="(t, k) in CHANNEL_LABELS" :key="k" :value="k">{{ t }}</option></select>
           </label>
-          <label class="field"><span>店铺</span><input v-model="head.store_name" /></label>
-          <label class="field"><span>订单号 / 小票号</span><input v-model="head.order_no" /></label>
-          <label class="field"><span>实付总额</span><input v-model="head.total_amount" type="number" min="0" /></label>
-          <label class="field"><span>币种</span><input v-model="head.currency" maxlength="3" /></label>
-          <label class="field wide"><span>备注</span><input v-model="head.notes" /></label>
+          <label class="field"><span>{{ translate("店铺") }}</span><input v-model="head.store_name" /></label>
+          <label class="field"><span>{{ translate("订单号 / 小票号") }}</span><input v-model="head.order_no" /></label>
+          <label class="field"><span>{{ translate("实付总额") }}</span><input v-model="head.total_amount" type="number" min="0" /></label>
+          <label class="field"><span>{{ translate("币种") }}</span><input v-model="head.currency" maxlength="3" /></label>
+          <label class="field wide"><span>{{ translate("备注") }}</span><input v-model="head.notes" /></label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn" :disabled="busy || !Object.keys(headChanges).length">保存</button>
-          <button type="button" class="btn ghost" @click="resetHead(purchase); editingHead = false">取消</button>
+          <button type="submit" class="btn" :disabled="busy || !Object.keys(headChanges).length">{{ translate("保存") }}</button>
+          <button type="button" class="btn ghost" @click="resetHead(purchase); editingHead = false">{{ translate("取消") }}</button>
         </div>
       </form>
       <dl v-else class="facts panel">
-        <div v-if="purchase.order_no"><dt>订单号</dt><dd class="mono">{{ purchase.order_no }}</dd></div>
-        <div><dt>金额</dt><dd>{{ total === null ? "未记录" : yen(total, purchase.currency) }}<span v-if="purchase.total_amount === null && total !== null" class="muted">（按明细计算）</span></dd></div>
-        <div v-if="purchase.notes"><dt>备注</dt><dd>{{ purchase.notes }}</dd></div>
+        <div v-if="purchase.order_no"><dt>{{ translate("订单号") }}</dt><dd class="mono">{{ purchase.order_no }}</dd></div>
+        <div><dt>{{ translate("金额") }}</dt><dd>{{ total === null ? translate("未记录") : yen(total, purchase.currency) }}<span v-if="purchase.total_amount === null && total !== null" class="muted">{{ translate("（按明细计算）") }}</span></dd></div>
+        <div v-if="purchase.notes"><dt>{{ translate("备注") }}</dt><dd>{{ purchase.notes }}</dd></div>
       </dl>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>明细（{{ purchase.lines.length }}）</h2>
-          <button type="button" class="btn ghost small" :aria-expanded="addingLine" @click="addingLine = !addingLine">{{ addingLine ? "取消追加" : "追加明细" }}</button>
+          <h2>{{ translate("明细（") }}{{ purchase.lines.length }}）</h2>
+          <button type="button" class="btn ghost small" :aria-expanded="addingLine" @click="addingLine = !addingLine">{{ addingLine ? translate("取消追加") : translate("追加明细") }}</button>
         </div>
         <form v-if="addingLine" class="sub-form" novalidate @submit.prevent="submitAddLine">
           <PurchaseLineForm v-model="addLine" :errors="errors" />
-          <label class="field check"><input v-model="addCreateItems" type="checkbox" :disabled="!addLine.product_id" /><span>按数量生成衣物</span></label>
-          <div class="form-actions"><button type="submit" class="btn small" :disabled="busy">追加</button></div>
+          <label class="field check"><input v-model="addCreateItems" type="checkbox" :disabled="!addLine.product_id" /><span>{{ translate("按数量生成衣物") }}</span></label>
+          <div class="form-actions"><button type="submit" class="btn small" :disabled="busy">{{ translate("追加") }}</button></div>
         </form>
 
         <ul class="lines">
@@ -350,54 +351,54 @@ const total = computed(() => {
             <div class="line-head">
               <div class="title">
                 <RouterLink v-if="l.product_id" :to="{ name: 'product', params: { id: l.product_id } }"><strong>{{ productName(l) }}</strong></RouterLink>
-                <strong v-else>{{ l.name_raw ?? "（未命名明细）" }}</strong>
-                <span class="badge" :class="{ warn: l.product_match !== 'confirmed' }">商品{{ MATCH_LABELS[l.product_match] ?? l.product_match }}</span>
-                <span v-if="l.verification === 'verified'" class="badge dark">已核实</span>
+                <strong v-else>{{ l.name_raw ?? translate("（未命名明细）") }}</strong>
+                <span class="badge" :class="{ warn: l.product_match !== 'confirmed' }">{{ translate("商品") }}{{ MATCH_LABELS[l.product_match] ?? l.product_match }}</span>
+                <span v-if="l.verification === 'verified'" class="badge dark">{{ translate("已核实") }}</span>
               </div>
               <div class="price">
                 {{ l.unit_price !== null ? yen(l.unit_price, purchase.currency) : "" }} × {{ l.quantity }}
-                <span v-if="l.discount_amount" class="muted">（折扣 {{ yen(l.discount_amount, purchase.currency) }}）</span>
+                <span v-if="l.discount_amount" class="muted">{{ translate("（折扣") }} {{ yen(l.discount_amount, purchase.currency) }}）</span>
               </div>
             </div>
             <p class="muted detail">
-              <template v-if="l.item_code_raw">编号 <span class="mono">{{ l.item_code_raw }}</span> · </template>
-              <template v-if="l.name_raw && l.product_id">小票名 {{ l.name_raw }} · </template>
-              颜色 {{ l.color_name ?? l.color_code ?? "—" }} · 尺码 {{ l.size_label ?? "—" }}<template v-if="l.size_system">（{{ label(SIZE_SYSTEM_LABELS, l.size_system) }}）</template>
-              <template v-if="l.returned_quantity"> · 已退 {{ l.returned_quantity }} 件</template>
+              <template v-if="l.item_code_raw">{{ translate("编号") }} <span class="mono">{{ l.item_code_raw }}</span> · </template>
+              <template v-if="l.name_raw && l.product_id">{{ translate("小票名") }} {{ l.name_raw }} · </template>
+              {{ translate("颜色") }} {{ l.color_name ?? l.color_code ?? "—" }} {{ translate("· 尺码") }} {{ l.size_label ?? "—" }}<template v-if="l.size_system">（{{ label(SIZE_SYSTEM_LABELS, l.size_system) }}）</template>
+              <template v-if="l.returned_quantity"> {{ translate("· 已退") }} {{ l.returned_quantity }} {{ translate("件") }}</template>
             </p>
             <p class="items">
-              衣物：
+              {{ translate("衣物：") }}
               <template v-if="l.item_ids?.length">
                 <RouterLink v-for="(iid, n) in l.item_ids" :key="iid" :to="{ name: 'item', params: { id: iid } }">{{ n ? "、" : "" }}#{{ iid }}</RouterLink>
               </template>
-              <span v-else class="muted">尚无</span>
-              <span v-if="(l.item_ids?.length ?? 0) < l.quantity" class="muted">（{{ l.quantity - (l.item_ids?.length ?? 0) }} 件未建衣物）</span>
+              <span v-else class="muted">{{ translate("尚无") }}</span>
+              <span v-if="(l.item_ids?.length ?? 0) < l.quantity" class="muted">（{{ l.quantity - (l.item_ids?.length ?? 0) }} {{ translate("件未建衣物）") }}</span>
             </p>
             <div class="actions">
-              <button type="button" class="btn ghost small" :disabled="busy" @click="editingLine === l.id ? (editingLine = null) : startEditLine(l)">{{ editingLine === l.id ? "取消编辑" : "编辑" }}</button>
-              <button type="button" class="btn ghost small" :disabled="busy" :aria-expanded="matching === l.id" @click="openMatch(l)">{{ l.product_match === "confirmed" ? "更换商品" : "匹配商品" }}</button>
-              <button v-if="l.product_id && (l.item_ids?.length ?? 0) < l.quantity" type="button" class="btn ghost small" :disabled="busy" @click="createLineItem(l)">添加一件衣物</button>
-              <button type="button" class="btn ghost small" :disabled="busy" @click="toggleLineVerify(l)">{{ l.verification === "verified" ? "取消核实" : "核实" }}</button>
-              <button type="button" class="btn danger small" :disabled="busy" @click="deleteLine(l)">删除</button>
+              <button type="button" class="btn ghost small" :disabled="busy" @click="editingLine === l.id ? (editingLine = null) : startEditLine(l)">{{ editingLine === l.id ? translate("取消编辑") : translate("编辑") }}</button>
+              <button type="button" class="btn ghost small" :disabled="busy" :aria-expanded="matching === l.id" @click="openMatch(l)">{{ l.product_match === "confirmed" ? translate("更换商品") : translate("匹配商品") }}</button>
+              <button v-if="l.product_id && (l.item_ids?.length ?? 0) < l.quantity" type="button" class="btn ghost small" :disabled="busy" @click="createLineItem(l)">{{ translate("添加一件衣物") }}</button>
+              <button type="button" class="btn ghost small" :disabled="busy" @click="toggleLineVerify(l)">{{ l.verification === "verified" ? translate("取消核实") : translate("核实") }}</button>
+              <button type="button" class="btn danger small" :disabled="busy" @click="deleteLine(l)">{{ translate("删除") }}</button>
             </div>
             <form v-if="editingLine === l.id" class="sub-form" novalidate @submit.prevent="saveLine(l)">
               <PurchaseLineForm v-model="lineEdit" :errors="errors" :allow-product="false" />
-              <div class="form-actions"><button type="submit" class="btn small" :disabled="busy">保存明细</button></div>
+              <div class="form-actions"><button type="submit" class="btn small" :disabled="busy">{{ translate("保存明细") }}</button></div>
             </form>
             <div v-if="matching === l.id" class="sub-form">
-              <p v-if="candidates.length" class="muted">推荐（按编号与名称相似度）：</p>
+              <p v-if="candidates.length" class="muted">{{ translate("推荐（按编号与名称相似度）：") }}</p>
               <ul v-if="candidates.length" class="candidates">
                 <li v-for="c in candidates" :key="c.product.id">
-                  <span>{{ c.product.name_ja || c.product.name_zh || c.product.name_en }} <span class="muted">· {{ c.product.brand ?? "无品牌" }} · {{ (c.reasons ?? []).map(reasonText).join("、") }}</span></span>
-                  <button type="button" class="btn small" :disabled="busy" @click="confirmMatch(l, c.product)">选这个</button>
+                  <span>{{ c.product.name_ja || c.product.name_zh || c.product.name_en }} <span class="muted">· {{ c.product.brand ?? translate("无品牌") }} · {{ (c.reasons ?? []).map(reasonText).join("、") }}</span></span>
+                  <button type="button" class="btn small" :disabled="busy" @click="confirmMatch(l, c.product)">{{ translate("选这个") }}</button>
                 </li>
               </ul>
-              <p class="muted">或搜索其他商品：</p>
+              <p class="muted">{{ translate("或搜索其他商品：") }}</p>
               <ProductPicker :selected-id="l.product_id" @select="(p: Product) => confirmMatch(l, p)" />
             </div>
           </li>
         </ul>
-        <p v-if="!purchase.lines.length" class="muted">没有明细。</p>
+        <p v-if="!purchase.lines.length" class="muted">{{ translate("没有明细。") }}</p>
       </section>
     </template>
   </div>

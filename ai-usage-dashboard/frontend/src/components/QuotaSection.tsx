@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "../i18n";
 import type { Fetched } from '../api/adapter';
 import { PRODUCTS_BY_PROVIDER, type Product, type Provider, type QuotaPool, type QuotaWindow, type Source } from '../api/types';
 import { selectionConnection } from '../domain/sources';
@@ -22,46 +23,47 @@ interface Props {
 }
 
 export function QuotaSection({ pools, pool, windows, sources, staleAfterSeconds, clock, providerLabel, history, provider, products }: Props) {
+  useLanguage();
   const noPool = pools.ok && pools.data.length === 0;
   return (
     <section className="section" aria-labelledby="quota-h">
       <div className="section-head">
         <div>
-          <div className="eyebrow">01 · 现在</div>
+          <div className="eyebrow">{translate("01 · 现在")}</div>
           <h2 id="quota-h">
-            {noPool ? '额度' : '额度池'} {pool && <span className="num">{pool.label}</span>}
-            {noPool && <span className="num">尚无额度来源</span>}
+            {noPool ? translate("额度") : translate("额度池")} {pool && <span className="num">{translate(pool.label)}</span>}
+            {noPool && <span className="num">{translate("尚无额度来源")}</span>}
           </h2>
           {noPool && (
             <p className="section-note">
-              额度池与关联产品：未知
+              {translate("额度池与关联产品：未知")}
               <br />
-              下方只显示 token 活动，不能换算成额度百分比。
+              {translate("下方只显示 token 活动，不能换算成额度百分比。")}
             </p>
           )}
           {pool && (
             <p className="section-note">
-              {poolMembershipText(pool, PRODUCTS_BY_PROVIDER[pool.provider])}（依据：{pool.membership_evidence}）
+              {poolMembershipText(pool, PRODUCTS_BY_PROVIDER[pool.provider])}{translate("（依据：")}{translate(pool.membership_evidence)}）
               <br />
-              同一池的各槽位分别显示，不能相加；额度按池显示，不随上方产品筛选变化。
+              {translate("同一池的各槽位分别显示，不能相加；额度按池显示，不随上方产品筛选变化。")}
             </p>
           )}
         </div>
       </div>
       {!pools.ok ? (
-        <FetchProblem result={pools} what="额度池" />
+        <FetchProblem result={pools} what={translate("额度池")} />
       ) : !pool ? (
         <div className="cards">
-          <article className="card not-connected" aria-label="供应商额度未接入">
+          <article className="card not-connected" aria-label={translate("供应商额度未接入")}>
             <div className="card-head">
-              <span className="eyebrow">供应商额度</span>
+              <span className="eyebrow">{translate("供应商额度")}</span>
               <span className="badge ghost">
-                <StatusDot kind="off" /> 未接入
+                <StatusDot kind="off" /> {translate("未接入")}
               </span>
             </div>
-            <div className="big-word">未接入</div>
+            <div className="big-word">{translate("未接入")}</div>
             <p className="card-note" style={{ fontSize: 14 }}>
-              {providerLabel} 目前没有额度快照来源。这里不显示百分比、进度条或重置时间，不会为只有 token 的来源生成额度窗口，也不会把读不到的额度写成 0。
+              {providerLabel} {translate("目前没有额度快照来源。这里不显示百分比、进度条或重置时间，不会为只有 token 的来源生成额度窗口，也不会把读不到的额度写成 0。")}
             </p>
           </article>
           {history?.kind === 'recent5h' && (
@@ -69,10 +71,10 @@ export function QuotaSection({ pools, pool, windows, sources, staleAfterSeconds,
           )}
         </div>
       ) : !windows ? null : !windows.ok ? (
-        <FetchProblem result={windows} what="额度窗口" />
+        <FetchProblem result={windows} what={translate("额度窗口")} />
       ) : windows.data.length === 0 ? (
         <div className="placeholder">
-          最近五小时内没有该池的额度窗口记录。没有当前窗口，不显示额度百分比，也不把更早的值当作现在的额度。
+          {translate("最近五小时内没有该池的额度窗口记录。没有当前窗口，不显示额度百分比，也不把更早的值当作现在的额度。")}
         </div>
       ) : (
         <QuotaCards windows={windows.data} sources={sources} staleAfterSeconds={staleAfterSeconds} clock={clock} />
@@ -92,6 +94,7 @@ export function QuotaCards({
   staleAfterSeconds: number;
   clock: Clock;
 }) {
+  useLanguage();
   return (
     <div className="cards">
       {cardWindows(windows).map((w) => (
@@ -115,6 +118,7 @@ function QuotaCard({
   clock: Clock;
   staleAfterSeconds: number;
 }) {
+  useLanguage();
   const st = cardState(w);
   const t = (iso: string) => fmtDateTimeRel(iso, clock.asOfMs, clock.tz);
   const remaining = w.ends_at ? fmtRemaining(Date.parse(w.ends_at) - clock.asOfMs) : null;
@@ -131,30 +135,30 @@ function QuotaCard({
     .join(' ');
 
   let badge: React.ReactNode;
-  if (st.status === 'expired') badge = <span className="badge ghost">窗口已结束</span>;
-  else if (pendingReset) badge = <span className="badge warn">待确认重置</span>;
-  else if (st.status === 'unknown') badge = <span className="badge ghost">窗口状态未知</span>;
+  if (st.status === 'expired') badge = <span className="badge ghost">{translate("窗口已结束")}</span>;
+  else if (pendingReset) badge = <span className="badge warn">{translate("待确认重置")}</span>;
+  else if (st.status === 'unknown') badge = <span className="badge ghost">{translate("窗口状态未知")}</span>;
   else if (st.stale)
     badge = (
-      <span className="badge warn" title={`超过 ${Math.round(staleAfterSeconds / 60)} 分钟没有新记录`}>
-        观测已过时
+      <span className="badge warn" title={translate("超过 {0} 分钟没有新记录", Math.round(staleAfterSeconds / 60))}>
+        {translate("观测已过时")}
       </span>
     );
   else if (failing?.last_success_at)
     badge = (
-      <span className="badge" title="来源同步失败，显示最后一次成功同步的数据">
-        截至 {t(failing.last_success_at)}
+      <span className="badge" title={translate("来源同步失败，显示最后一次成功同步的数据")}>
+        {translate("截至")} {t(failing.last_success_at)}
       </span>
     );
-  else badge = <span className="badge">当前窗口</span>;
+  else badge = <span className="badge">{translate("当前窗口")}</span>;
 
-  let unit = '% 已用';
-  if (st.status === 'expired') unit = '% 最后观测';
-  else if (st.status === 'unknown') unit = '% · 最近记录';
-  else if (st.stale && st.timeIso) unit = `% · ${t(st.timeIso)} 时`;
+  let unit = translate("% 已用");
+  if (st.status === 'expired') unit = translate("% 最后观测");
+  else if (st.status === 'unknown') unit = translate("% · 最近记录");
+  else if (st.stale && st.timeIso) unit = translate("% · {0} 时", t(st.timeIso));
 
   return (
-    <article className={cls} aria-label={`${slotTitle(w)}，槽位 ${w.slot}`}>
+    <article className={cls} aria-label={translate("{0}，槽位 {1}", slotTitle(w), w.slot)}>
       <div className="card-head">
         <span className="eyebrow">
           {slotTitle(w)} <span className="num">· {w.slot}</span>
@@ -164,7 +168,7 @@ function QuotaCard({
 
       <div className="big-pct">
         {st.percent === null ? (
-          <span className="unit">已用比例未知</span>
+          <span className="unit">{translate("已用比例未知")}</span>
         ) : (
           <>
             <span className="num value">{st.percent}</span>
@@ -174,33 +178,33 @@ function QuotaCard({
       </div>
 
       {st.percent !== null && st.status === 'current' && (
-        <div className="meter" role="img" aria-label={`已用 ${st.percent}%`}>
+        <div className="meter" role="img" aria-label={translate("已用 {0}%", st.percent)}>
           <div style={{ width: `${Math.min(st.percent, 100)}%` }} />
         </div>
       )}
-      {st.overHundred && <p className="card-note">来源报告超过 100%，按原值显示。</p>}
+      {st.overHundred && <p className="card-note">{translate("来源报告超过 100%，按原值显示。")}</p>}
       {st.stale && st.timeIso && (
         <p className="card-note">
-          之后约 {fmtAgo(st.timeIso, clock.asOfMs).replace('前', '')}没有新的额度记录，当前实际值可能更高。
-          {w.ends_at && `重置时间 ${t(w.ends_at)}（${boundarySourceText('end', w)}）仍然有效。`}
+          {translate("之后约")} {fmtAgo(st.timeIso, clock.asOfMs).replace(translate("前"), '')}{translate("没有新的额度记录，当前实际值可能更高。")}
+          {w.ends_at && translate("重置时间 {0}（{1}）仍然有效。", t(w.ends_at), boundarySourceText('end', w))}
         </p>
       )}
       {st.status === 'expired' && w.ends_at && (
         <p className="card-note">
-          该窗口已于 <span className="num">{t(w.ends_at)}</span> 到达重置时间，之后尚无新快照，所以不再当作当前额度，也不归零。
+          {translate("该窗口已于")} <span className="num">{t(w.ends_at)}</span> {translate("到达重置时间，之后尚无新快照，所以不再当作当前额度，也不归零。")}
         </p>
       )}
       {st.status === 'unknown' && (
-        <p className="card-note">来源没有给出这个窗口的起止时间，不能判断它是否为当前窗口；不画时间轴，也不参与前后翻页。</p>
+        <p className="card-note">{translate("来源没有给出这个窗口的起止时间，不能判断它是否为当前窗口；不画时间轴，也不参与前后翻页。")}</p>
       )}
 
       <div className="card-grid">
         <div>
-          <div className="eyebrow">重置</div>
+          <div className="eyebrow">{translate("重置")}</div>
           <div className="num v">
-            {w.ends_at ? t(w.ends_at) : '未知'}{' '}
+            {w.ends_at ? t(w.ends_at) : translate("未知")}{' '}
             {st.status === 'current' && !st.stale && remaining && w.duration_seconds !== null && w.duration_seconds <= 86400 && (
-              <span className="muted">还剩 {remaining}</span>
+              <span className="muted">{translate("还剩")} {remaining}</span>
             )}
           </div>
         </div>
@@ -212,24 +216,24 @@ function QuotaCard({
                 {t(st.timeIso)} <span className="muted">{fmtAgo(st.timeIso, clock.asOfMs)}</span>
               </>
             ) : (
-              '暂无'
+              translate("暂无")
             )}
           </div>
         </div>
       </div>
 
       {others.length > 0 && (
-        <p className="card-note" title={others.map((o) => `${o.id}：${o.ends_at ? t(o.ends_at) : '结束未知'}`).join('\n')}>
-          这个槽位存在 {others.length + 1} 条边界不同、时间重叠的窗口记录，当前按最新记录展示。这只是展示选择，不代表供应商已确认窗口修订，各记录的值也不相加。
+        <p className="card-note" title={others.map((o) => `${o.id}：${o.ends_at ? t(o.ends_at) : translate("结束未知")}`).join('\n')}>
+          {translate("这个槽位存在")} {others.length + 1} {translate("条边界不同、时间重叠的窗口记录，当前按最新记录展示。这只是展示选择，不代表供应商已确认窗口修订，各记录的值也不相加。")}
         </p>
       )}
 
       <div className="bounds">
-        <span className="num">开始 {w.starts_at ? t(w.starts_at) : '未知'}</span>
+        <span className="num">{translate("开始")} {w.starts_at ? t(w.starts_at) : translate("未知")}</span>
         <span className="badge ghost">{boundarySourceText('start', w)}</span>
-        <span className="num">结束 {w.ends_at ? t(w.ends_at) : '未知'}</span>
+        <span className="num">{translate("结束")} {w.ends_at ? t(w.ends_at) : translate("未知")}</span>
         <span className="badge ghost">{boundarySourceText('end', w)}</span>
-        {w.semantics === 'unknown' && <span className="subtle">固定/滑动规则未经验证</span>}
+        {w.semantics === 'unknown' && <span className="subtle">{translate("固定/滑动规则未经验证")}</span>}
       </div>
     </article>
   );

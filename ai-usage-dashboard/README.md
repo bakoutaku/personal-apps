@@ -4,6 +4,10 @@
 
 在本机查看 Codex 和 Claude Code 的使用记录。可以区分最近活动、按日／周／月汇总的历史，以及 Codex 日志实际记录的额度快照。当前提供 macOS 源码预览，Windows 尚未实机验证。前端为 React 与 TypeScript，由 Claude 辅助开发。后端为 Python 与 SQLite，由 GPT 辅助开发。
 
+## 切换界面语言
+
+在页面右上角选择简体中文、日本語或 English。默认使用简体中文，同一浏览器会记住上次的选择。
+
 ## 界面截图
 
 使用虚构记录截取的实际运行界面。

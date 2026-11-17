@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // Phase 5C 批量：列出持有中、有标签 / 分类建议的衣物，勾选后一次生成待确认提议；
 // 接受 / 拒绝在「待确认提议」中逐条或批量进行。只读预览，生成前不修改任何衣物。
 import { computed, onBeforeUnmount, ref } from "vue";
 import { api } from "../api/client";
 import type { ItemSuggestions, ItemSummary } from "../api/types";
-import { errorMessage } from "../lib/errors";
+import { apiErrorText, errorMessage } from "../lib/errors";
 import { notify } from "../lib/toast";
 
 type Row = ItemSuggestions & { item: ItemSummary };
@@ -13,11 +14,11 @@ const MAX_BATCH = 100; // 与后端 POST /tag-suggestions/batch 的上限一致
 const rows = ref<Row[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const busy = ref(false);
 // 每件衣物的勾选：标签名列表与是否采用分类建议
 const picks = ref<Record<number, { tags: string[]; category: boolean }>>({});
-const results = ref<Record<number, string>>({});
+const results = ref<Record<number, { ok: boolean; error?: { code: string; message: string }; count?: number }>>({});
 
 // 读取与生成各有自己的请求代次，互不使对方失效；两者在界面与函数中互斥（生成中不读取，读取中不生成）
 let loadReq = 0;
@@ -43,7 +44,7 @@ async function load(append = false) {
     }
     for (const r of page.items) picks.value[r.item_id] = { tags: r.tags.map((t) => t.name), category: r.category !== null };
   } catch (e) {
-    if (mine === loadReq) error.value = errorMessage(e);
+    if (mine === loadReq) error.value = () => errorMessage(e);
   } finally {
     if (mine === loadReq) loading.value = false;
   }
@@ -85,10 +86,10 @@ async function submit() {
     }));
     const out = await api.createBatchTagSuggestions(body);
     if (mine !== submitReq) return;
-    for (const r of out.results) results.value[r.item_id] = r.ok ? `已生成 ${r.proposals?.length ?? 0} 条提议` : `失败：${r.error?.message ?? ""}`;
-    notify(`已为 ${out.succeeded} 件衣物生成待确认提议${out.failed ? `，${out.failed} 件失败（原因见列表）` : ""}`, { kind: out.failed ? "error" : "info" });
+    for (const r of out.results) results.value[r.item_id] = { ok: r.ok, count: r.proposals?.length, error: r.error ?? undefined };
+    notify(translate("已为 {0} 件衣物生成待确认提议{1}", out.succeeded, out.failed ? translate("，{0} 件失败（原因见列表）", out.failed) : ""), { kind: out.failed ? "error" : "info" });
   } catch (e) {
-    if (mine === submitReq) error.value = errorMessage(e);
+    if (mine === submitReq) error.value = () => errorMessage(e);
   } finally {
     if (mine === submitReq) busy.value = false;
   }
@@ -96,32 +97,31 @@ async function submit() {
 </script>
 
 <template>
-  <section class="batch" aria-label="批量标签与分类建议">
+  <section class="batch" :aria-label='translate("批量标签与分类建议")'>
     <p class="muted small">
-      根据同一商品的其他衣物、同类的相似衣物和商品名称按固定规则给出（不是图像识别）。勾选后生成的是待确认提议，标签只追加、不删除已有标签；
-      请到「待确认提议」中逐条或批量接受 / 拒绝。
+      {{ translate("根据同一商品的其他衣物、同类的相似衣物和商品名称按固定规则给出（不是图像识别）。勾选后生成的是待确认提议，标签只追加、不删除已有标签； 请到「待确认提议」中逐条或批量接受 / 拒绝。") }}
     </p>
     <div class="actions bar">
-      <span class="muted small">{{ loading ? "正在计算…" : `${total} 件衣物有建议` }}</span>
-      <button type="button" class="link-btn" :disabled="busy" @click="setAll(true)">全选</button>
-      <button type="button" class="link-btn" :disabled="busy" @click="setAll(false)">全不选</button>
+      <span class="muted small">{{ loading ? translate("正在计算…") : translate("{0} 件衣物有建议", total) }}</span>
+      <button type="button" class="link-btn" :disabled="busy" @click="setAll(true)">{{ translate("全选") }}</button>
+      <button type="button" class="link-btn" :disabled="busy" @click="setAll(false)">{{ translate("全不选") }}</button>
       <button type="button" class="btn small" :disabled="busy || loading || overLimit || !selected.length" @click="submit">
-        {{ busy ? "生成中…" : `为选中的 ${selected.length} 件生成提议` }}
+        {{ busy ? translate("生成中…") : translate("为选中的 {0} 件生成提议", selected.length) }}
       </button>
     </div>
     <p v-if="overLimit" class="error-banner" role="alert" data-testid="batch-limit">
-      一次最多为 {{ MAX_BATCH }} 件衣物生成提议，当前选中 {{ selected.length }} 件。
-      <button type="button" class="link-btn" :disabled="busy" @click="keepFirst">只保留前 {{ MAX_BATCH }} 件</button>
+      {{ translate("一次最多为") }} {{ MAX_BATCH }} {{ translate("件衣物生成提议，当前选中") }} {{ selected.length }} {{ translate("件。") }}
+      <button type="button" class="link-btn" :disabled="busy" @click="keepFirst">{{ translate("只保留前") }} {{ MAX_BATCH }} {{ translate("件") }}</button>
     </p>
-    <p v-if="error" class="error-banner" role="alert">{{ error }} <button type="button" class="link-btn" :disabled="busy || loading" @click="load()">重试</button></p>
-    <p v-if="!loading && !error && !rows.length" class="empty-note" data-testid="batch-empty">没有可建议的衣物。</p>
+    <p v-if="error" class="error-banner" role="alert">{{ error?.() }} <button type="button" class="link-btn" :disabled="busy || loading" @click="load()">{{ translate("重试") }}</button></p>
+    <p v-if="!loading && !error && !rows.length" class="empty-note" data-testid="batch-empty">{{ translate("没有可建议的衣物。") }}</p>
     <ul class="rows">
       <li v-for="r in rows" :key="r.item_id" :data-testid="`batch-${r.item_id}`">
         <div class="who">
           <img v-if="r.item.thumb_url" :src="r.item.thumb_url" alt="" />
           <span v-else class="ph" />
           <RouterLink :to="{ name: 'item', params: { id: r.item_id } }">{{ r.item.name }}</RouterLink>
-          <span v-if="results[r.item_id]" class="badge" :class="{ warn: results[r.item_id]!.startsWith('失败') }" role="status">{{ results[r.item_id] }}</span>
+          <span v-if="results[r.item_id]" class="badge" :class="{ warn: !results[r.item_id]!.ok }" role="status">{{ results[r.item_id]!.ok ? translate("已生成 {0} 条提议", results[r.item_id]!.count ?? 0) : translate("失败：{0}", results[r.item_id]!.error ? apiErrorText(results[r.item_id]!.error!.code, results[r.item_id]!.error!.message) : "") }}</span>
         </div>
         <div class="opts">
           <label v-for="t in r.tags" :key="t.name" class="opt" :title="t.reasons.map((x) => x.label).join('；')">
@@ -130,13 +130,13 @@ async function submit() {
           </label>
           <label v-if="r.category" class="opt" :title="r.category.reasons.map((x) => x.label).join('；')">
             <input v-model="picks[r.item_id]!.category" type="checkbox" :disabled="busy || !!results[r.item_id]" />
-            分类：{{ r.category.path.join(" / ") }}
+            {{ translate("分类：") }}{{ r.category.path.join(" / ") }}
           </label>
         </div>
       </li>
     </ul>
     <div v-if="rows.length < total && !loading" class="more">
-      <button type="button" class="btn ghost" :disabled="busy" @click="load(true)">加载更多（还有 {{ total - rows.length }} 件）</button>
+      <button type="button" class="btn ghost" :disabled="busy" @click="load(true)">{{ translate("加载更多（还有") }} {{ total - rows.length }} {{ translate("件）") }}</button>
     </div>
   </section>
 </template>

@@ -57,11 +57,11 @@ enum PetAssets {
             try FileManager.default.createDirectory(at: customDirectory, withIntermediateDirectories: true)
             let guide = customDirectory.appendingPathComponent("使用说明.txt")
             if !FileManager.default.fileExists(atPath: guide.path) {
-                try "自定义桌宠形象：放入透明背景 GIF 后，从桌宠菜单选择「重新加载形象」。\n支持文件：idle.gif（待机）、running.gif（回复）、waiting.gif（授权）、jumping.gif（结束）、review.gif（查看结果）。\n建议每张使用相同尺寸与角色大小，比例约192×208；建议单文件不超过10MB。未提供的状态继续使用内置形象。\n此目录在应用外部，替换 GIF 无需修改程序、重新签名或重新授权辅助功能。\n内置橙书娘素材来自 fywdy/chatgpt-chibi-pets，CC BY-NC 4.0，非商业使用并保留署名。\n".write(to: guide, atomically: true, encoding: .utf8)
+                try localized("自定义桌宠形象：放入透明背景 GIF 后，从桌宠菜单选择「重新加载形象」。\n支持文件：idle.gif（待机）、running.gif（回复）、waiting.gif（授权）、jumping.gif（结束）、review.gif（查看结果）。\n建议每张使用相同尺寸与角色大小，比例约192×208；建议单文件不超过10MB。未提供的状态继续使用内置形象。\n此目录在应用外部，替换 GIF 无需修改程序、重新签名或重新授权辅助功能。\n内置橙书娘素材来自 fywdy/chatgpt-chibi-pets，CC BY-NC 4.0，非商业使用并保留署名。\n").write(to: guide, atomically: true, encoding: .utf8)
             }
             NSWorkspace.shared.open(customDirectory)
         } catch {
-            let alert = NSAlert(); alert.messageText = "无法打开形象文件夹"; alert.informativeText = error.localizedDescription; alert.runModal()
+            let alert = NSAlert(); alert.messageText = localized("无法打开形象文件夹"); alert.informativeText = error.localizedDescription; alert.runModal()
         }
     }
 }
@@ -234,6 +234,6 @@ struct AnimatedPet: NSViewRepresentable {
     }
     func updateNSView(_ view: PetImageCanvas, context: Context) {
         view.configure(state: state, epoch: epoch, paused: paused)
-        view.setAccessibilityLabel("Claude 橙书娘 Q 版 · " + state)
+        view.setAccessibilityLabel(localized("Claude 橙书娘 Q 版 · ") + state)
     }
 }

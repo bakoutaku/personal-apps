@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 // 购买明细表单的草稿结构与请求体转换。
 import type { PurchaseLine } from "../api/types";
 
@@ -59,6 +60,6 @@ export function lineDraft(l: PurchaseLine): LineDraft {
 /** 提交前的本地校验（与后端 LineIn.quantity 1～99 一致）。键与后端错误的 loc 相同，便于在字段旁显示。 */
 export function lineErrors(d: LineDraft, prefix = ""): Record<string, string> {
   const q = d.quantity === "" ? NaN : Number(d.quantity);
-  if (!Number.isInteger(q) || q < 1 || q > 99) return { [`${prefix}quantity`]: "数量必须是 1～99 的整数" };
+  if (!Number.isInteger(q) || q < 1 || q > 99) return { [`${prefix}quantity`]: translate("数量必须是 1～99 的整数") };
   return {};
 }

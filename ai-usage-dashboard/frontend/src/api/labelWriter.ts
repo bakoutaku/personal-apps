@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 // 标签写入（POST / PATCH / DELETE），依据 docs/label-editing-handoff.md。
 // - 所有写入带 X-CSRF-Token（AuthClient 内存值），Cookie 由浏览器自动携带。
 // - 网络中断 / 服务不可达 = 结果未确认，不是失败；不自动换键、不自动拿新版本覆盖。
@@ -39,8 +40,8 @@ export const NAME_MAX = 80;
 /** 名称按 Unicode 码点计 1–80，不能全是空白（后端去首尾空白）。返回错误文字或 null。 */
 export function validateName(name: string): string | null {
   const trimmed = name.trim();
-  if (trimmed.length === 0) return '请输入名称（不能全是空白）。';
-  if (Array.from(trimmed).length > NAME_MAX) return `名称最多 ${NAME_MAX} 个字。`;
+  if (trimmed.length === 0) return translate("请输入名称（不能全是空白）。");
+  if (Array.from(trimmed).length > NAME_MAX) return translate("名称最多 {0} 个字。", NAME_MAX);
   return null;
 }
 

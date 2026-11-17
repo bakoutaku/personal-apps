@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { onBeforeUnmount, ref, watch } from "vue";
 import { api } from "../api/client";
 import type { ItemSummary, QuickGroup } from "../api/types";
@@ -13,7 +14,7 @@ const group = ref<string | null>(null);
 const groups = ref<QuickGroup[]>();
 const results = ref<ItemSummary[]>([]);
 const loading = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 let timer: ReturnType<typeof setTimeout> | undefined;
 let requestId = 0;
 
@@ -32,7 +33,7 @@ async function search() {
       groups.value = facets.groups;
     }
   } catch (e) {
-    if (id === requestId) error.value = errorMessage(e);
+    if (id === requestId) error.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -55,9 +56,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="picker">
-    <input v-model="q" class="input" type="search" placeholder="搜索要加入的衣物…" aria-label="搜索衣物" />
+    <input v-model="q" class="input" type="search" :placeholder='translate("搜索要加入的衣物…")' :aria-label='translate("搜索衣物")' />
     <QuickGroups :groups="groups" :selected="group" @select="(key) => (group = key)" />
-    <p v-if="error" class="field-error" role="alert">{{ error }}</p>
+    <p v-if="error" class="field-error" role="alert">{{ error?.() }}</p>
     <ul class="grid" :aria-busy="loading">
       <li v-for="it in results" :key="it.id">
         <button type="button" class="pick" :disabled="props.excluded.includes(it.id)" @click="emit('pick', it)">
@@ -68,11 +69,11 @@ onBeforeUnmount(() => {
             <ColorDot :hex="it.resolved.color.hex" :swatch="it.color_swatch?.hex" :family="it.resolved.color.family" :size="10" />
             {{ it.resolved.size.label ?? "" }}
           </span>
-          <span v-if="props.excluded.includes(it.id)" class="added">已加入</span>
+          <span v-if="props.excluded.includes(it.id)" class="added">{{ translate("已加入") }}</span>
         </button>
       </li>
     </ul>
-    <p v-if="!loading && !results.length" class="muted">没有找到衣物</p>
+    <p v-if="!loading && !results.length" class="muted">{{ translate("没有找到衣物") }}</p>
   </div>
 </template>
 

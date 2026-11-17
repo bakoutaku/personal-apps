@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n";
 // 供应商标识：路径取自 simple-icons 15.22.0（icons/openai.svg、icons/claude.svg，CC0 数据），
 // 保持原始 24×24 viewBox 与比例，不改形状，只上色。商标属于 OpenAI / Anthropic；按钮只表示数据来源，
 // 不表示官方产品或背书。来源与版本见 frontend/ASSETS.md。运行时不远程加载。
@@ -12,6 +13,7 @@ const CLAUDE_PATH =
 const CLAUDE_ORANGE = '#D97757';
 
 export function OpenAIIcon({ size = 22, color = 'currentColor' }: { size?: number; color?: string }) {
+  useLanguage();
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d={OPENAI_PATH} fill={color} />
@@ -20,6 +22,7 @@ export function OpenAIIcon({ size = 22, color = 'currentColor' }: { size?: numbe
 }
 
 export function ClaudeIcon({ size = 22, color = CLAUDE_ORANGE }: { size?: number; color?: string }) {
+  useLanguage();
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d={CLAUDE_PATH} fill={color} />

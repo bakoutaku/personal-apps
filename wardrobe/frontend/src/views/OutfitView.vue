@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 穿搭：查看与编辑同一页。保存时依次提交字段、条目、标签，每一步使用上一步返回的 version。
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
@@ -27,7 +28,7 @@ const cover = ref<ImageInfo | null>(null);
 const picking = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const errors = ref<Record<string, string>>({});
 const conflict = ref(false);
 let saved = false;
@@ -77,7 +78,7 @@ async function load() {
     reset(o);
     document.title = `${o.name} · Wardrobe`;
   } catch (e) {
-    if (id === requestId) error.value = errorMessage(e);
+    if (id === requestId) error.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -101,7 +102,7 @@ const tagsChanged = computed(() => JSON.stringify(tags.value) !== JSON.stringify
 const dirty = computed(() => editing.value && (Object.keys(fieldChanges.value).length > 0 || itemsChanged.value || tagsChanged.value));
 
 onBeforeRouteLeave(() => {
-  if (dirty.value && !saved && !window.confirm("有尚未保存的修改，确定离开吗？")) return false;
+  if (dirty.value && !saved && !window.confirm(translate("有尚未保存的修改，确定离开吗？"))) return false;
 });
 
 function add(it: ItemSummary) {
@@ -135,7 +136,7 @@ async function save() {
     }
     if (tagsChanged.value || (isNew.value && tags.value.length)) void refreshDictionaries();
     saved = true;
-    notify(isNew.value ? "已创建穿搭" : "已保存穿搭");
+    notify(isNew.value ? translate("已创建穿搭") : translate("已保存穿搭"));
     if (isNew.value) {
       await router.push({ name: "outfit", params: { id: current.id } });
     } else {
@@ -145,7 +146,7 @@ async function save() {
       saved = false;
     }
   } catch (e) {
-    error.value = errorMessage(e);
+    error.value = () => errorMessage(e);
     errors.value = fieldErrors(e);
     conflict.value = isConflict(e);
   } finally {
@@ -164,13 +165,13 @@ function cancel() {
 
 async function remove() {
   const o = outfit.value;
-  if (!o || !window.confirm(`删除穿搭「${o.name}」？其中的衣物不会被删除。`)) return;
+  if (!o || !window.confirm(translate("删除穿搭「{0}」？其中的衣物不会被删除。", o.name))) return;
   try {
     await api.deleteOutfit(o.id, o.version);
-    notify(`已删除穿搭「${o.name}」`);
+    notify(translate("已删除穿搭「{0}」", o.name));
     await router.push({ name: "outfits" });
   } catch (e) {
-    error.value = errorMessage(e);
+    error.value = () => errorMessage(e);
   }
 }
 
@@ -179,31 +180,31 @@ const viewEntries = computed(() => outfit.value?.items ?? []);
 
 <template>
   <div class="page">
-    <RouterLink :to="{ name: 'outfits' }" class="link-btn">← 全部穿搭</RouterLink>
-    <p v-if="loading" class="muted">加载中…</p>
-    <p v-else-if="error && !outfit && !isNew" class="error-banner" role="alert">{{ error }}</p>
+    <RouterLink :to="{ name: 'outfits' }" class="link-btn">{{ translate("← 全部穿搭") }}</RouterLink>
+    <p v-if="loading" class="muted">{{ translate("加载中…") }}</p>
+    <p v-else-if="error && !outfit && !isNew" class="error-banner" role="alert">{{ error?.() }}</p>
 
     <template v-else-if="!editing && outfit">
       <div class="page-head">
         <div>
           <h1>{{ outfit.name }}</h1>
           <p class="muted sub">
-            {{ outfit.items.length }} 件<template v-if="outfit.season"> · {{ label(SEASON_LABELS, outfit.season) }}</template><template v-if="outfit.occasion"> · {{ outfit.occasion }}</template>
+            {{ outfit.items.length }} {{ translate("件") }}<template v-if="outfit.season"> · {{ label(SEASON_LABELS, outfit.season) }}</template><template v-if="outfit.occasion"> · {{ outfit.occasion }}</template>
             <template v-if="outfit.rating"> · <span class="stars">{{ "★".repeat(outfit.rating) }}</span></template>
           </p>
         </div>
         <div class="actions">
-          <button type="button" class="btn small" @click="editing = true">编辑</button>
-          <button type="button" class="btn danger small" @click="remove">删除</button>
+          <button type="button" class="btn small" @click="editing = true">{{ translate("编辑") }}</button>
+          <button type="button" class="btn danger small" @click="remove">{{ translate("删除") }}</button>
         </div>
       </div>
-      <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
+      <p v-if="error" class="error-banner" role="alert">{{ error?.() }}</p>
       <div v-if="outfit.tags.length" class="tags">
         <RouterLink v-for="t in outfit.tags" :key="t" class="chip" :to="{ name: 'outfits', query: { tag: t } }">#{{ t }}</RouterLink>
       </div>
       <p v-if="outfit.description" class="desc">{{ outfit.description }}</p>
       <div class="view-layout">
-        <img v-if="outfit.cover_image" :src="outfit.cover_image.url" :alt="`${outfit.name} 封面`" class="cover" />
+        <img v-if="outfit.cover_image" :src="outfit.cover_image.url" :alt="translate('{0} 封面', outfit.name)" class="cover" />
         <ul class="grid">
           <li v-for="e in viewEntries" :key="e.item.id">
             <span class="slot">{{ label(SLOT_LABELS, e.slot) }}</span>
@@ -211,48 +212,48 @@ const viewEntries = computed(() => outfit.value?.items ?? []);
           </li>
         </ul>
       </div>
-      <p v-if="!viewEntries.length" class="muted">这套穿搭还没有衣物。</p>
+      <p v-if="!viewEntries.length" class="muted">{{ translate("这套穿搭还没有衣物。") }}</p>
     </template>
 
     <form v-else-if="editing" novalidate @submit.prevent="save">
-      <div class="page-head"><h1>{{ isNew ? "新建穿搭" : `编辑：${outfit?.name}` }}</h1></div>
+      <div class="page-head"><h1>{{ isNew ? translate("新建穿搭") : translate("编辑：{0}", outfit?.name) }}</h1></div>
       <p v-if="error" class="error-banner" role="alert">
-        {{ error }}
-        <button v-if="conflict" type="button" class="link-btn" @click="load">载入最新版本（放弃未保存修改）</button>
+        {{ error?.() }}
+        <button v-if="conflict" type="button" class="link-btn" @click="load">{{ translate("载入最新版本（放弃未保存修改）") }}</button>
       </p>
       <section class="panel">
         <div class="form-grid">
           <label class="field wide">
-            <span>名称（必填）</span>
+            <span>{{ translate("名称（必填）") }}</span>
             <input v-model="form.name" required :aria-invalid="!!errors.name" />
             <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
           </label>
           <label class="field">
-            <span>季节</span>
+            <span>{{ translate("季节") }}</span>
             <select v-model="form.season">
-              <option value="">未指定</option>
+              <option value="">{{ translate("未指定") }}</option>
               <option v-for="(t, k) in SEASON_LABELS" :key="k" :value="k">{{ t }}</option>
             </select>
           </label>
-          <label class="field"><span>场合</span><input v-model="form.occasion" placeholder="例如 通勤" /></label>
+          <label class="field"><span>{{ translate("场合") }}</span><input v-model="form.occasion" :placeholder='translate("例如 通勤")' /></label>
           <label class="field">
-            <span>评分</span>
+            <span>{{ translate("评分") }}</span>
             <select v-model="form.rating">
-              <option value="">未评分</option>
+              <option value="">{{ translate("未评分") }}</option>
               <option v-for="n in 5" :key="n" :value="n">{{ "★".repeat(n) }}</option>
             </select>
           </label>
-          <label class="field wide"><span>说明</span><textarea v-model="form.description" /></label>
+          <label class="field wide"><span>{{ translate("说明") }}</span><textarea v-model="form.description" /></label>
           <div class="field wide">
-            <span>标签</span>
-            <TagInput v-model="tags" label="添加穿搭标签" />
+            <span>{{ translate("标签") }}</span>
+            <TagInput v-model="tags" :label='translate("添加穿搭标签")' />
           </div>
           <div class="field wide">
-            <span>封面照片</span>
+            <span>{{ translate("封面照片") }}</span>
             <div class="cover-edit">
-              <img v-if="cover" :src="cover.thumb_url" alt="当前封面" />
-              <ImageUploader :label="cover ? '更换封面' : '上传封面'" @uploaded="(img: ImageInfo) => { cover = img; }" />
-              <button v-if="cover" type="button" class="link-btn" @click="cover = null">移除封面</button>
+              <img v-if="cover" :src="cover.thumb_url" :alt='translate("当前封面")' />
+              <ImageUploader :label="cover ? translate('更换封面') : translate('上传封面')" @uploaded="(img: ImageInfo) => { cover = img; }" />
+              <button v-if="cover" type="button" class="link-btn" @click="cover = null">{{ translate("移除封面") }}</button>
             </div>
           </div>
         </div>
@@ -260,32 +261,32 @@ const viewEntries = computed(() => outfit.value?.items ?? []);
 
       <section class="panel">
         <div class="panel-head">
-          <h2>衣物（{{ entries.length }}）</h2>
-          <button type="button" class="btn ghost small" :aria-expanded="picking" @click="picking = !picking">{{ picking ? "收起" : "添加衣物" }}</button>
+          <h2>{{ translate("衣物（") }}{{ entries.length }}）</h2>
+          <button type="button" class="btn ghost small" :aria-expanded="picking" @click="picking = !picking">{{ picking ? translate("收起") : translate("添加衣物") }}</button>
         </div>
         <ItemPicker v-if="picking" class="picker" :excluded="entries.map((e) => e.item.id)" @pick="add" />
         <ol v-if="entries.length" class="entries">
           <li v-for="(e, i) in entries" :key="e.item.id" :data-testid="`entry-${e.item.id}`">
             <img v-if="e.item.thumb_url" :src="e.item.thumb_url" alt="" />
             <span v-else class="ph" />
-            <span class="name">{{ e.item.name }}<span class="muted"> · {{ e.item.brand ?? "无品牌" }}</span></span>
-            <select v-model="e.slot" class="input slot-select" :aria-label="`${e.item.name} 的位置`">
+            <span class="name">{{ e.item.name }}<span class="muted"> · {{ e.item.brand ?? translate("无品牌") }}</span></span>
+            <select v-model="e.slot" class="input slot-select" :aria-label="translate('{0} 的位置', e.item.name)">
               <option v-for="(t, k) in SLOT_LABELS" :key="k" :value="k">{{ t }}</option>
             </select>
             <span class="row-actions">
-              <button type="button" class="link-btn" :disabled="i === 0" aria-label="上移" @click="move(i, -1)">↑</button>
-              <button type="button" class="link-btn" :disabled="i === entries.length - 1" aria-label="下移" @click="move(i, 1)">↓</button>
-              <button type="button" class="link-btn" @click="entries.splice(i, 1)">移除</button>
+              <button type="button" class="link-btn" :disabled="i === 0" :aria-label='translate("上移")' @click="move(i, -1)">↑</button>
+              <button type="button" class="link-btn" :disabled="i === entries.length - 1" :aria-label='translate("下移")' @click="move(i, 1)">↓</button>
+              <button type="button" class="link-btn" @click="entries.splice(i, 1)">{{ translate("移除") }}</button>
             </span>
           </li>
         </ol>
-        <p v-else class="muted">还没有加入衣物。</p>
+        <p v-else class="muted">{{ translate("还没有加入衣物。") }}</p>
         <p v-if="errors['items.0.item_id'] || errors.items" class="field-error">{{ errors["items.0.item_id"] || errors.items }}</p>
       </section>
 
       <div class="form-actions">
-        <button type="submit" class="btn" :disabled="saving || !form.name.trim() || (!isNew && !dirty)">{{ saving ? "保存中…" : isNew ? "创建穿搭" : "保存" }}</button>
-        <button type="button" class="btn ghost" @click="cancel">取消</button>
+        <button type="submit" class="btn" :disabled="saving || !form.name.trim() || (!isNew && !dirty)">{{ saving ? translate("保存中…") : isNew ? translate("创建穿搭") : translate("保存") }}</button>
+        <button type="button" class="btn ghost" @click="cancel">{{ translate("取消") }}</button>
       </div>
     </form>
   </div>

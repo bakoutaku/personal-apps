@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 // 本机自动采集设置（contracts/collector-settings.md）。不属于 v0.2 数据契约，类型在这里手写。
 // - 读取 GET /collector-settings；保存 POST /collector-settings，带 X-CSRF-Token。
 // - 401 不自动重发：表单草稿只留在本对象内存里，重新配对后恢复，等用户再次点击保存。
@@ -121,15 +122,15 @@ export class CollectorClient {
 export function reasonText(reason: string): string {
   return (
     {
-      scope_not_confirmed: '请先确认读取范围。',
-      path_too_broad: '这个范围太大（主目录、磁盘根目录或包含本应用数据的位置）。请选择具体的日志目录。',
-      path_not_directory: '找不到这个目录，或它不是目录。',
-      path_symlink: '不能选择符号链接，请选择实际目录。',
-      path_unreadable: '目录暂时无法读取，未启用。请检查读取权限后再试。',
-      not_absolute: '请填写完整路径（以 / 或 ~ 开头）。',
-      disable_first: '已启用的来源要先停用，再按新的范围重新启用。',
-      locked_by_startup_config: '本次由启动参数指定采集配置，页面设置只读。',
-      collection_disabled_for_this_run: '本次启动已关闭采集（--no-collection），页面设置只读。',
+      scope_not_confirmed: translate("请先确认读取范围。"),
+      path_too_broad: translate("这个范围太大（主目录、磁盘根目录或包含本应用数据的位置）。请选择具体的日志目录。"),
+      path_not_directory: translate("找不到这个目录，或它不是目录。"),
+      path_symlink: translate("不能选择符号链接，请选择实际目录。"),
+      path_unreadable: translate("目录暂时无法读取，未启用。请检查读取权限后再试。"),
+      not_absolute: translate("请填写完整路径（以 / 或 ~ 开头）。"),
+      disable_first: translate("已启用的来源要先停用，再按新的范围重新启用。"),
+      locked_by_startup_config: translate("本次由启动参数指定采集配置，页面设置只读。"),
+      collection_disabled_for_this_run: translate("本次启动已关闭采集（--no-collection），页面设置只读。"),
     } as Record<string, string>
-  )[reason] ?? '设置未保存：内容不符合要求。';
+  )[reason] ?? translate("设置未保存：内容不符合要求。");
 }

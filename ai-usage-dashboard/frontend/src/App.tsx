@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "./i18n";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { DataAdapter } from './api/adapter';
 import type { Product, Provider } from './api/types';
@@ -34,6 +35,7 @@ const isGalleryHash = () => window.location.hash.startsWith('#/states');
 
 /** 顶层：mock 模式下 #/states 显示状态样例页，其余交给 App。 */
 export function Root({ adapter }: { adapter: DataAdapter }) {
+  useLanguage();
   const [gallery, setGallery] = useState(() => !!StatesGallery && adapter.mode === 'mock' && isGalleryHash());
   useEffect(() => {
     const onHash = () => setGallery(!!StatesGallery && adapter.mode === 'mock' && isGalleryHash());
@@ -44,10 +46,10 @@ export function Root({ adapter }: { adapter: DataAdapter }) {
   return (
     <div data-provider="gpt">
       <div className="banner" role="note">
-        模拟数据 · 状态样例 · 所有数字均为虚构
+        {translate("模拟数据 · 状态样例 · 所有数字均为虚构")}
       </div>
       <div className="page">
-        <Suspense fallback={<div className="placeholder">正在加载…</div>}>
+        <Suspense fallback={<div className="placeholder">{translate("正在加载…")}</div>}>
           <StatesGallery />
         </Suspense>
       </div>
@@ -72,7 +74,7 @@ function initialRoute(adapter: DataAdapter): { route: Route; dropped: string[] }
   return parsed;
 }
 
-const PAGE_LABEL: Record<Page, string> = { home: '用量', quota: '额度', details: '明细', sources: '数据来源', about: '关于' };
+const PAGE_LABEL: Record<Page, string> = { get home() { return translate("用量"); }, get quota() { return translate("额度"); }, get details() { return translate("明细"); }, get sources() { return translate("数据来源"); }, get about() { return translate("关于"); } };
 
 export interface SessionControls {
   onLogout: () => void;
@@ -85,6 +87,7 @@ export interface SessionControls {
 }
 
 export function App({ adapter, session }: { adapter: DataAdapter; session?: SessionControls }) {
+  useLanguage();
   const live = adapter.mode === 'http';
   const [{ route, dropped }, setParsed] = useState(() => initialRoute(adapter));
   // 最近一次读取结果及其所属范围。范围变化时不清空（整页塌缩会让浏览器把滚动钳回顶部），
@@ -266,7 +269,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
   const writable = !!session?.writer && !!data && route.provider === data.account.provider;
   const labelEditing: LabelEditing = {
     writable,
-    readOnlyReason: session ? '数据还在读取中' : '模拟数据只读，接入本机服务后可编辑标签',
+    readOnlyReason: session ? translate("数据还在读取中") : translate("模拟数据只读，接入本机服务后可编辑标签"),
     open: (req) => writable && setEditor(req),
   };
   // 编辑器按 id 找标签 / 会话：主范围与选区两批合起来
@@ -283,13 +286,13 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
   const failure = current && !current.ok ? <LoadFailure result={current} settings={settingsPanel} /> : null;
   const loadingBox = (
     <div className="placeholder" aria-busy="true">
-      {live ? '正在读取本机数据…' : '正在读取模拟数据…'}
+      {live ? translate("正在读取本机数据…") : translate("正在读取模拟数据…")}
     </div>
   );
   // 页面从本机服务读取数据的时间（不是额度观测时间）
   const readStatus =
     live && clock && lastReadAt !== null
-      ? `${sched?.inFlight ? '正在读取… · ' : ''}页面读取 ${fmtClock(lastReadAt, clock.tz)}${sched && sched.nextDelayMs !== null && sched.failures === 0 ? ' · 页面可见时每 30 秒自动读取' : ''}（不是额度观测时间）`
+      ? translate("{0}页面读取 {1}{2}（不是额度观测时间）", sched?.inFlight ? translate("正在读取… · ") : '', fmtClock(lastReadAt, clock.tz), sched && sched.nextDelayMs !== null && sched.failures === 0 ? translate(" · 页面可见时每 30 秒自动读取") : '')
       : null;
   const pageHref = (pg: Page, extra: Partial<Route> = {}) => formatHash({ ...route, page: pg, ...extra });
 
@@ -298,14 +301,14 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
     <div data-provider={route.provider}>
       {prevData?.meta.data_mode === 'mock' && clock && (
         <div className="banner" role="note">
-          模拟数据 · 所有数字均为虚构 · 模拟时钟 {fmtDate(clock.asOfMs, clock.tz)} {fmtTime(clock.asOfMs, clock.tz)}（{clock.tz}）
+          {translate("模拟数据 · 所有数字均为虚构 · 模拟时钟")} {fmtDate(clock.asOfMs, clock.tz)} {fmtTime(clock.asOfMs, clock.tz)}（{clock.tz}）
           {/* health/accounts 属于共享 catalog，场景名取自来源响应 */}
-          {prevData.sources.ok && prevData.sources.meta.scenario_id ? ` · 场景 ${prevData.sources.meta.scenario_id}` : ''}
+          {prevData.sources.ok && prevData.sources.meta.scenario_id ? translate(" · 场景 {0}", prevData.sources.meta.scenario_id) : ''}
           {adapter.mode === 'mock' && (
             <>
               {' · '}
               <a href="#/states" style={{ color: 'inherit' }}>
-                查看状态样例
+                {translate("查看状态样例")}
               </a>
             </>
           )}
@@ -319,7 +322,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
           clock={clock}
           sourcesHref={pageHref('sources')}
           nav={
-            <nav aria-label="页面" className="page-nav">
+            <nav aria-label={translate("页面")} className="page-nav">
               {PAGES.map((pg) => (
                 <a key={pg} href={pageHref(pg)} aria-current={page === pg ? 'page' : undefined}>
                   {PAGE_LABEL[pg]}
@@ -334,9 +337,9 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
                 <button
                   type="button"
                   className={`ibtn${sched?.inFlight ? ' spinning' : ''}`}
-                  aria-label="刷新"
+                  aria-label={translate("刷新")}
                   aria-busy={sched?.inFlight || undefined}
-                  title={readStatus ? `重新读取整页数据\n${readStatus}` : '重新读取整页数据'}
+                  title={readStatus ? translate("重新读取整页数据\n{0}", readStatus) : translate("重新读取整页数据")}
                   onClick={refresh}
                   disabled={loading}
                 >
@@ -345,8 +348,8 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
                   </svg>
                 </button>
                 {session && (
-                  <button type="button" className="text-btn" onClick={session.onLogout} title="撤销这台浏览器的本应用会话（不是退出 OpenAI / Claude）">
-                    退出本机会话
+                  <button type="button" className="text-btn" onClick={session.onLogout} title={translate("撤销这台浏览器的本应用会话（不是退出 OpenAI / Claude）")}>
+                    {translate("退出本机会话")}
                   </button>
                 )}
               </>
@@ -356,7 +359,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
 
         {sameProvider && sameProvider.accounts.length > 1 && (
           <label className="account-pick small">
-            <span className="eyebrow">账户命名空间</span>
+            <span className="eyebrow">{translate("账户命名空间")}</span>
             <select
               value={sameProvider.account.id}
               onChange={(e) => {
@@ -368,7 +371,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
               {sameProvider.accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
-                  {a.identity_status === 'local_unverified' ? '（本机，未验证）' : ''}
+                  {a.identity_status === 'local_unverified' ? translate("（本机，未验证）") : ''}
                 </option>
               ))}
             </select>
@@ -379,12 +382,12 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
           <div className="state-bar warn" role="status">
             <div className="state-bar-row">
               <div className="body">
-                <strong>读取失败（{fmtClock(readError.at, clock.tz)}）：{readError.reason}。</strong>
-                页面仍显示 {lastReadAt !== null ? fmtClock(lastReadAt, clock.tz) : '上一次'} 成功读取的数据，不代表这段时间没有新记录。
-                {sched?.nextDelayMs != null && ` 约 ${Math.round(sched.nextDelayMs / 1000)} 秒后自动重试。`}
+                <strong>{translate("读取失败（")}{fmtClock(readError.at, clock.tz)}）：{readError.reason}。</strong>
+                {translate("页面仍显示")} {lastReadAt !== null ? fmtClock(lastReadAt, clock.tz) : translate("上一次")} {translate("成功读取的数据，不代表这段时间没有新记录。")}
+                {sched?.nextDelayMs != null && translate(" 约 {0} 秒后自动重试。", Math.round(sched.nextDelayMs / 1000))}
               </div>
               <button type="button" className="text-btn" onClick={refresh} disabled={loading}>
-                立即重试
+                {translate("立即重试")}
               </button>
             </div>
           </div>
@@ -392,7 +395,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
 
         {(dropped.length > 0 || (data?.notices.length ?? 0) > 0) && (
           <div className="notice" role="status">
-            {dropped.length > 0 && <div>链接里有无法识别的参数，已忽略：{dropped.join('、')}</div>}
+            {dropped.length > 0 && <div>{translate("链接里有无法识别的参数，已忽略：")}{dropped.join('、')}</div>}
             {data?.notices.map((n) => <div key={n}>{n}</div>)}
           </div>
         )}
@@ -482,7 +485,7 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
               {settingsPanel}
               <SourcesTable sources={data.sources} providerLabel={PROVIDER_LABEL[route.provider]} clock={clock} />
               <div className="section">
-                <div className="eyebrow">已导入的历史</div>
+                <div className="eyebrow">{translate("已导入的历史")}</div>
                 <HistoryExplainer sources={sourcesList} providerLabel={PROVIDER_LABEL[route.provider]} clock={clock} />
               </div>
             </>
@@ -520,25 +523,26 @@ export function App({ adapter, session }: { adapter: DataAdapter; session?: Sess
 }
 
 function LoadFailure({ result, settings }: { result: LoadResult & { ok: false }; settings: ReactNode }) {
-  if (result.reason === 'base_unavailable') return <FetchProblem result={result.detail as never} what="基础信息" />;
+  useLanguage();
+  if (result.reason === 'base_unavailable') return <FetchProblem result={result.detail as never} what={translate("基础信息")} />;
   if (result.reason === 'no_accounts')
     return (
       <>
         <div className="placeholder">
-          <strong>本机服务里还没有用量记录。</strong>
+          <strong>{translate("本机服务里还没有用量记录。")}</strong>
           <br />
           {settings
-            ? '数据由本机服务读取，页面本身不读取日志文件。可以在下面启用本机 Codex / Claude Code 日志的自动采集。这里不会改用模拟数据。'
-            : '数据由本机服务导入，页面不读取日志文件；导入后点“刷新”。这里不会改用模拟数据。'}
+            ? translate("数据由本机服务读取，页面本身不读取日志文件。可以在下面启用本机 Codex / Claude Code 日志的自动采集。这里不会改用模拟数据。")
+            : translate("数据由本机服务导入，页面不读取日志文件；导入后点“刷新”。这里不会改用模拟数据。")}
         </div>
         {settings}
       </>
     );
   if (result.reason === 'no_account')
-    return <div className="placeholder">本机服务里还没有这个供应商的记录。</div>;
+    return <div className="placeholder">{translate("本机服务里还没有这个供应商的记录。")}</div>;
   return (
     <div className="notice error" role="alert">
-      {result.reason === 'revision_mismatch' ? '多个请求的数据修订不一致，已重读仍不一致，暂不显示以免拼接两轮数据。' : '模拟与真实数据混在一起，已停止显示。'}
+      {result.reason === 'revision_mismatch' ? translate("多个请求的数据修订不一致，已重读仍不一致，暂不显示以免拼接两轮数据。") : translate("模拟与真实数据混在一起，已停止显示。")}
       <br />
       <code>{result.detail}</code>
     </div>
@@ -561,24 +565,24 @@ function useLiveClock(asOfIso: string | null, tz: string | null, receivedAt: num
 /** 读取失败的简短原因（只用来提示，不显示后端原文）。 */
 function describeFailure(r: LoadResult): string {
   if (!r.ok) {
-    if (r.reason === 'revision_mismatch') return '数据在读取过程中发生变化';
+    if (r.reason === 'revision_mismatch') return translate("数据在读取过程中发生变化");
     if (r.reason === 'base_unavailable') {
       const d = r.detail;
-      if (!d.ok && d.kind === 'unreachable') return '本地服务不可达';
-      if (!d.ok && d.kind === 'http_error') return `本地服务返回 HTTP ${d.status}`;
+      if (!d.ok && d.kind === 'unreachable') return translate("本地服务不可达");
+      if (!d.ok && d.kind === 'http_error') return translate("本地服务返回 HTTP {0}", d.status);
     }
-    return '读取未完成';
+    return translate("读取未完成");
   }
   const h = r.data.history;
   const parts = [r.data.sources, r.data.pools, r.data.windows, h?.series, h?.events, h?.sessions, h?.labels, h?.snapshots];
   for (const f of parts) {
     if (f && !f.ok) {
-      if (f.kind === 'unreachable') return '本地服务不可达';
-      if (f.kind === 'http_error') return `本地服务返回 HTTP ${f.status}`;
-      if (f.kind === 'incomplete') return '分页没有读完';
+      if (f.kind === 'unreachable') return translate("本地服务不可达");
+      if (f.kind === 'http_error') return translate("本地服务返回 HTTP {0}", f.status);
+      if (f.kind === 'incomplete') return translate("分页没有读完");
     }
   }
-  return '部分数据读取失败';
+  return translate("部分数据读取失败");
 }
 
 function fmtClock(ms: number, tz: string): string {

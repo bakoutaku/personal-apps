@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { computed, ref, useId } from "vue";
 import { dict } from "../lib/dictionaries";
 
@@ -26,7 +27,7 @@ function remove(name: string) {
     <ul v-if="modelValue.length" class="current">
       <li v-for="t in modelValue" :key="t" class="chip">
         #{{ t }}
-        <button type="button" class="x" :aria-label="`移除标签 ${t}`" @click="remove(t)">×</button>
+        <button type="button" class="x" :aria-label="translate('移除标签 {0}', t)" @click="remove(t)">×</button>
       </li>
     </ul>
     <div class="row">
@@ -34,11 +35,11 @@ function remove(name: string) {
         v-model="draft"
         class="input"
         :list="listId"
-        :aria-label="label ?? '添加标签'"
-        placeholder="输入标签后按回车"
+        :aria-label="label ?? translate('添加标签')"
+        :placeholder='translate("输入标签后按回车")'
         @keydown.enter.prevent="add"
       />
-      <button type="button" class="btn ghost small" :disabled="!draft.trim()" @click="add">添加</button>
+      <button type="button" class="btn ghost small" :disabled="!draft.trim()" @click="add">{{ translate("添加") }}</button>
     </div>
     <datalist :id="listId">
       <option v-for="s in suggestions" :key="s" :value="s" />

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // Phase 5C：这件衣物的标签 / 分类规则建议 → 勾选 → 生成待确认提议（不直接修改衣物）。
 // 规则见 docs/PHASE5C_TAG_CATEGORY_SUGGESTIONS.md。
 import { computed, onBeforeUnmount, ref, watch } from "vue";
@@ -11,7 +12,7 @@ const emit = defineEmits<{ created: [proposals: Proposal[]]; close: [] }>();
 
 const data = ref<ItemSuggestions | null>(null);
 const loading = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const pickedTags = ref<string[]>([]);
 const pickCategory = ref(false);
 const creating = ref(false);
@@ -41,7 +42,7 @@ async function load() {
     pickedTags.value = out.tags.map((t) => t.name);
     pickCategory.value = out.category !== null;
   } catch (e) {
-    if (mine === loadReq) error.value = errorMessage(e);
+    if (mine === loadReq) error.value = () => errorMessage(e);
   } finally {
     if (mine === loadReq) loading.value = false;
   }
@@ -58,9 +59,9 @@ watch([pickedTags, pickCategory], () => {
 }, { deep: true });
 
 const NOTES: Record<string, string> = {
-  already_categorized: "这件衣物已经有分类。",
-  no_keyword_match: "商品名称中没有找到已有分类的名称。",
-  ambiguous: "商品名称同时含有不同大类、或同一层级难分长短的多个分类名称，无法判断。",
+  already_categorized: translate("这件衣物已经有分类。"),
+  no_keyword_match: translate("商品名称中没有找到已有分类的名称。"),
+  ambiguous: translate("商品名称同时含有不同大类、或同一层级难分长短的多个分类名称，无法判断。"),
 };
 
 async function submit() {
@@ -81,7 +82,7 @@ async function submit() {
     emit("created", out.proposals);
     if (mine === submitReq && !picksChanged) created.value = out.proposals;
   } catch (e) {
-    if (mine === submitReq) error.value = errorMessage(e);
+    if (mine === submitReq) error.value = () => errorMessage(e);
   } finally {
     if (mine === submitReq) creating.value = false;
   }
@@ -92,38 +93,38 @@ const nonePicked = computed(() => !pickedTags.value.length && !(pickCategory.val
 </script>
 
 <template>
-  <section class="panel tag-panel" aria-label="标签与分类建议">
+  <section class="panel tag-panel" :aria-label='translate("标签与分类建议")'>
     <div class="panel-head">
-      <h2>标签与分类建议</h2>
-      <button type="button" class="link-btn" @click="emit('close')">收起</button>
+      <h2>{{ translate("标签与分类建议") }}</h2>
+      <button type="button" class="link-btn" @click="emit('close')">{{ translate("收起") }}</button>
     </div>
-    <p class="note">根据同一商品的其他衣物、同类的相似衣物和商品名称按固定规则给出，不是图像识别。生成的是待确认提议：标签只追加、不删除已有标签；接受之前不会修改这件衣物。</p>
+    <p class="note">{{ translate("根据同一商品的其他衣物、同类的相似衣物和商品名称按固定规则给出，不是图像识别。生成的是待确认提议：标签只追加、不删除已有标签；接受之前不会修改这件衣物。") }}</p>
 
-    <p v-if="loading" class="muted small">正在计算建议…</p>
-    <p v-if="error" class="error-banner" role="alert">{{ error }} <button type="button" class="link-btn" :disabled="creating" @click="load">重试</button></p>
+    <p v-if="loading" class="muted small">{{ translate("正在计算建议…") }}</p>
+    <p v-if="error" class="error-banner" role="alert">{{ error?.() }} <button type="button" class="link-btn" :disabled="creating" @click="load">{{ translate("重试") }}</button></p>
 
     <template v-if="data && !loading">
-      <p v-if="nothing" class="muted" data-testid="tag-nothing">暂时没有可建议的标签或分类。<template v-if="data.category_note">{{ NOTES[data.category_note] }}</template></p>
+      <p v-if="nothing" class="muted" data-testid="tag-nothing">{{ translate("暂时没有可建议的标签或分类。") }}<template v-if="data.category_note">{{ NOTES[data.category_note] }}</template></p>
       <fieldset v-if="data.tags.length" class="group">
-        <legend>追加标签</legend>
+        <legend>{{ translate("追加标签") }}</legend>
         <label v-for="t in data.tags" :key="t.name" class="opt" :data-testid="`tag-opt-${t.name}`">
           <input v-model="pickedTags" type="checkbox" :value="t.name" />
           <span><strong>#{{ t.name }}</strong><span class="muted small">{{ t.reasons.map((r) => r.label).join("；") }}</span></span>
         </label>
       </fieldset>
       <fieldset v-if="data.category" class="group">
-        <legend>分类</legend>
+        <legend>{{ translate("分类") }}</legend>
         <label class="opt" data-testid="cat-opt">
           <input v-model="pickCategory" type="checkbox" />
           <span><strong>{{ data.category.path.join(" / ") }}</strong><span class="muted small">{{ data.category.reasons.map((r) => r.label).join("；") }}</span></span>
         </label>
       </fieldset>
-      <p v-else-if="!nothing && data.category_note" class="muted small">分类：{{ NOTES[data.category_note] }}</p>
+      <p v-else-if="!nothing && data.category_note" class="muted small">{{ translate("分类：") }}{{ NOTES[data.category_note] }}</p>
 
       <template v-if="!nothing">
-        <p v-if="outdated" class="error-banner" role="alert">读取建议之后这件衣物已被修改，请重新读取。<button type="button" class="link-btn" :disabled="creating" @click="load">重新读取</button></p>
-        <p v-if="created" class="done" role="status">已生成 {{ created.length }} 条待确认提议（尚未应用），可在下方提议列表中接受或拒绝。</p>
-        <button v-else type="button" class="btn" :disabled="creating || outdated || nonePicked" @click="submit">{{ creating ? "生成中…" : "生成待确认提议" }}</button>
+        <p v-if="outdated" class="error-banner" role="alert">{{ translate("读取建议之后这件衣物已被修改，请重新读取。") }}<button type="button" class="link-btn" :disabled="creating" @click="load">{{ translate("重新读取") }}</button></p>
+        <p v-if="created" class="done" role="status">{{ translate("已生成") }} {{ created.length }} {{ translate("条待确认提议（尚未应用），可在下方提议列表中接受或拒绝。") }}</p>
+        <button v-else type="button" class="btn" :disabled="creating || outdated || nonePicked" @click="submit">{{ creating ? translate("生成中…") : translate("生成待确认提议") }}</button>
       </template>
     </template>
   </section>

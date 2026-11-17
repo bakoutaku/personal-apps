@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // Phase 5A-2：从这件衣物自己的一张照片得到颜色候选 → 预览颜色整组的改动 → 生成待确认提议。
 // 只生成提议，不修改衣物；接受/拒绝仍在提议列表中进行。接口见 docs/PHASE5A_BACKEND_CONTRACT.md。
 import { computed, onBeforeUnmount, ref, watch } from "vue";
@@ -18,7 +19,7 @@ const region = ref<ColorRegion | null>(null);
 const analysis = ref<ColorAnalysis | null>(null);
 const analyzing = ref(false);
 const generating = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const chosen = ref<string | null>(null);
 const colorName = ref("");
 const colorCode = ref("");
@@ -77,7 +78,7 @@ async function analyze() {
     analysis.value = result;
     chosen.value = result.candidates[0]?.hex ?? null;
   } catch (e) {
-    if (gen === generation) error.value = errorMessage(e);
+    if (gen === generation) error.value = () => errorMessage(e);
   } finally {
     if (gen === generation) analyzing.value = false;
   }
@@ -119,7 +120,7 @@ async function generate() {
     created.value = out.proposal;
     emit("created", out.proposal);
   } catch (e) {
-    if (sub === submission) error.value = errorMessage(e);
+    if (sub === submission) error.value = () => errorMessage(e);
   } finally {
     if (sub === submission) generating.value = false;
   }
@@ -172,32 +173,31 @@ const box = (r: ColorRegion) => ({ left: `${r.x * 100}%`, top: `${r.y * 100}%`, 
 
 const familyLabel = (f: string | null) => COLOR_FAMILIES.find((c) => c.key === f)?.label ?? f ?? "";
 const reasonText = (r: string | null) =>
-  r === "no_opaque_pixels" ? "所选区域全部是透明像素。" : r === "no_dominant_color" ? "没有占比达到 3% 的颜色（例如细碎花纹），无法给出候选。" : "";
-const show = (v: string | null) => v ?? "（空）";
+  r === "no_opaque_pixels" ? translate("所选区域全部是透明像素。") : r === "no_dominant_color" ? translate("没有占比达到 3% 的颜色（例如细碎花纹），无法给出候选。") : "";
+const show = (v: string | null) => v ?? translate("（空）");
 </script>
 
 <template>
-  <section class="panel color-panel" aria-label="分析照片颜色">
+  <section class="panel color-panel" :aria-label='translate("分析照片颜色")'>
     <div class="panel-head">
-      <h2>分析照片颜色</h2>
-      <button type="button" class="link-btn" @click="emit('close')">收起</button>
+      <h2>{{ translate("分析照片颜色") }}</h2>
+      <button type="button" class="link-btn" @click="emit('close')">{{ translate("收起") }}</button>
     </div>
     <p class="note">
-      根据照片像素统计颜色候选（本地计算，不上传图片），<strong>可能受背景和光线影响</strong>。占比只是该颜色在所选区域中的像素比例，不代表准确率。
-      生成的是待确认提议，接受之前不会修改这件衣物。
+      {{ translate("根据照片像素统计颜色候选（本地计算，不上传图片），") }}<strong>{{ translate("可能受背景和光线影响") }}</strong>{{ translate("。占比只是该颜色在所选区域中的像素比例，不代表准确率。 生成的是待确认提议，接受之前不会修改这件衣物。") }}
     </p>
 
     <p v-if="!ownImages.length" class="muted">
-      这件衣物还没有自己的照片。请先在
-      <RouterLink :to="{ name: 'item-edit', params: { id: item.id } }">编辑页</RouterLink>
-      上传照片（商品图可能是其他色款，因此不用于分析）。
+      {{ translate("这件衣物还没有自己的照片。请先在") }}
+      <RouterLink :to="{ name: 'item-edit', params: { id: item.id } }">{{ translate("编辑页") }}</RouterLink>
+      {{ translate("上传照片（商品图可能是其他色款，因此不用于分析）。") }}
     </p>
 
     <template v-else>
-      <div class="pick-image" role="radiogroup" aria-label="选择照片">
+      <div class="pick-image" role="radiogroup" :aria-label='translate("选择照片")'>
         <label v-for="img in ownImages" :key="img.id" class="thumb" :class="{ on: img.id === imageId }">
           <input v-model="imageId" type="radio" name="color-image" :value="img.id" class="visually-hidden" />
-          <img :src="img.thumb_url" :alt="`照片 ${img.id}`" />
+          <img :src="img.thumb_url" :alt="translate('照片 {0}', img.id)" />
         </label>
       </div>
 
@@ -212,67 +212,66 @@ const show = (v: string | null) => v ?? "（空）";
             @pointerup="up"
             @pointercancel="up"
           >
-            <img :src="image.url" alt="用于分析的原图" draggable="false" />
+            <img :src="image.url" :alt='translate("用于分析的原图")' draggable="false" />
             <div v-if="shown" class="region" :style="box(shown)" />
           </div>
-          <p class="muted small">在图片上拖动可只分析衣物所在的区域。</p>
+          <p class="muted small">{{ translate("在图片上拖动可只分析衣物所在的区域。") }}</p>
           <details class="exact">
-            <summary>精确输入区域（%）</summary>
+            <summary>{{ translate("精确输入区域（%）") }}</summary>
             <div class="exact-grid">
               <label v-for="k in ['x', 'y', 'w', 'h'] as const" :key="k" class="field">
-                <span>{{ { x: "左", y: "上", w: "宽", h: "高" }[k] }}</span>
+                <span>{{ { x: translate("左"), y: translate("上"), w: translate("宽"), h: translate("高") }[k] }}</span>
                 <input type="number" min="0" max="100" step="1" :value="Math.round(pct[k] * 100)" @change="setPct(k, ($event.target as HTMLInputElement).value)" />
               </label>
             </div>
           </details>
           <div class="actions">
-            <span class="small">{{ region ? `区域：左 ${Math.round(region.x * 100)}% 上 ${Math.round(region.y * 100)}% 宽 ${Math.round(region.w * 100)}% 高 ${Math.round(region.h * 100)}%` : "整张图片" }}</span>
-            <button v-if="region" type="button" class="link-btn" @click="setRegion(null)">使用整张图片</button>
+            <span class="small">{{ region ? translate("区域：左 {0}% 上 {1}% 宽 {2}% 高 {3}%", Math.round(region.x * 100), Math.round(region.y * 100), Math.round(region.w * 100), Math.round(region.h * 100)) : translate("整张图片") }}</span>
+            <button v-if="region" type="button" class="link-btn" @click="setRegion(null)">{{ translate("使用整张图片") }}</button>
           </div>
         </div>
 
         <div class="results">
-          <button type="button" class="btn small" :disabled="analyzing" @click="analyze">{{ analyzing ? "分析中…" : analysis ? "重新分析" : "分析颜色" }}</button>
-          <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
+          <button type="button" class="btn small" :disabled="analyzing" @click="analyze">{{ analyzing ? translate("分析中…") : analysis ? translate("重新分析") : translate("分析颜色") }}</button>
+          <p v-if="error" class="error-banner" role="alert">{{ error?.() }}</p>
 
           <template v-if="analysis">
-            <p v-if="analysis.status === 'no_suggestion'" class="muted" data-testid="no-suggestion">没有颜色候选：{{ reasonText(analysis.reason) }}</p>
+            <p v-if="analysis.status === 'no_suggestion'" class="muted" data-testid="no-suggestion">{{ translate("没有颜色候选：") }}{{ reasonText(analysis.reason) }}</p>
             <template v-else>
-              <p class="muted small">算法 {{ analysis.algorithm }}；选择一个候选：</p>
-              <p v-if="!analysis.region" class="muted small hint-bg">分析的是整张照片，排第一的颜色可能是背景；可以先在图片上框选衣物再分析。</p>
-              <div class="candidates" role="radiogroup" aria-label="颜色候选">
+              <p class="muted small">{{ translate("算法") }} {{ analysis.algorithm }}{{ translate("；选择一个候选：") }}</p>
+              <p v-if="!analysis.region" class="muted small hint-bg">{{ translate("分析的是整张照片，排第一的颜色可能是背景；可以先在图片上框选衣物再分析。") }}</p>
+              <div class="candidates" role="radiogroup" :aria-label='translate("颜色候选")'>
                 <label v-for="c in analysis.candidates" :key="c.hex" class="cand" :class="{ on: chosen === c.hex }" :data-testid="`cand-${c.hex}`">
                   <input v-model="chosen" type="radio" name="color-cand" :value="c.hex" class="visually-hidden" />
                   <span class="swatch" :style="{ background: c.hex }" />
                   <span class="cand-text">
                     <strong>{{ c.hex }}</strong>
-                    <span class="muted">{{ familyLabel(c.color_family) }} · 像素占比 {{ Math.round(c.pixel_share * 100) }}%</span>
+                    <span class="muted">{{ familyLabel(c.color_family) }} {{ translate("· 像素占比") }} {{ Math.round(c.pixel_share * 100) }}%</span>
                   </span>
                 </label>
               </div>
 
               <div class="names">
-                <label class="field"><span>颜色名称（可选）</span><input v-model="colorName" placeholder="例如 NAVY" /></label>
-                <label class="field"><span>颜色编号（可选）</span><input v-model="colorCode" placeholder="例如 69" /></label>
+                <label class="field"><span>{{ translate("颜色名称（可选）") }}</span><input v-model="colorName" :placeholder='translate("例如 NAVY")' /></label>
+                <label class="field"><span>{{ translate("颜色编号（可选）") }}</span><input v-model="colorCode" :placeholder='translate("例如 69")' /></label>
               </div>
-              <p class="muted small">编号和名称不会根据颜色自动推测；留空时，接受后会清空衣物原来的对应值。</p>
+              <p class="muted small">{{ translate("编号和名称不会根据颜色自动推测；留空时，接受后会清空衣物原来的对应值。") }}</p>
 
-              <table class="data preview" aria-label="颜色整组的前后对比">
-                <thead><tr><th></th><th>衣物颜色覆盖（当前）</th><th>接受后写入</th></tr></thead>
+              <table class="data preview" :aria-label='translate("颜色整组的前后对比")'>
+                <thead><tr><th></th><th>{{ translate("衣物颜色覆盖（当前）") }}</th><th>{{ translate("接受后写入") }}</th></tr></thead>
                 <tbody>
-                  <tr><th>颜色值</th><td><ColorDot :hex="current.color_hex" :size="12" /> {{ show(current.color_hex) }}</td><td><ColorDot :hex="proposed.color_hex" :size="12" /> {{ show(proposed.color_hex) }}</td></tr>
-                  <tr><th>名称</th><td>{{ show(current.color_name) }}</td><td :class="{ clears: current.color_name && !proposed.color_name }">{{ show(proposed.color_name) }}</td></tr>
-                  <tr><th>编号</th><td>{{ show(current.color_code) }}</td><td :class="{ clears: current.color_code && !proposed.color_code }">{{ show(proposed.color_code) }}</td></tr>
+                  <tr><th>{{ translate("颜色值") }}</th><td><ColorDot :hex="current.color_hex" :size="12" /> {{ show(current.color_hex) }}</td><td><ColorDot :hex="proposed.color_hex" :size="12" /> {{ show(proposed.color_hex) }}</td></tr>
+                  <tr><th>{{ translate("名称") }}</th><td>{{ show(current.color_name) }}</td><td :class="{ clears: current.color_name && !proposed.color_name }">{{ show(proposed.color_name) }}</td></tr>
+                  <tr><th>{{ translate("编号") }}</th><td>{{ show(current.color_code) }}</td><td :class="{ clears: current.color_code && !proposed.color_code }">{{ show(proposed.color_code) }}</td></tr>
                 </tbody>
               </table>
               <p class="muted small">
-                当前有效颜色：<ColorDot :hex="analysis.resolved_color.hex" :family="analysis.resolved_color.family" :size="12" />
-                {{ analysis.resolved_color.name ?? analysis.resolved_color.hex ?? "未记录" }}（来源：{{ label(SOURCE_LABELS, analysis.resolved_color.source) || "无" }}）。
-                衣物自己的颜色优先于购买记录和商品默认值，接受后有效颜色将来自「手动指定」。购买记录和商品资料不会改变。
+                {{ translate("当前有效颜色：") }}<ColorDot :hex="analysis.resolved_color.hex" :family="analysis.resolved_color.family" :size="12" />
+                {{ analysis.resolved_color.name ?? analysis.resolved_color.hex ?? translate("未记录") }}{{ translate("（来源：") }}{{ label(SOURCE_LABELS, analysis.resolved_color.source) || translate("无") }}{{ translate("）。 衣物自己的颜色优先于购买记录和商品默认值，接受后有效颜色将来自「手动指定」。购买记录和商品资料不会改变。") }}
               </p>
 
-              <p v-if="outdated" class="error-banner" role="alert">分析之后这件衣物已被修改，请重新分析后再生成提议。</p>
-              <p v-if="created" class="done" role="status">已生成待确认提议 #{{ created.proposal_id }}（尚未应用），可在下方提议列表中接受或拒绝。</p>
+              <p v-if="outdated" class="error-banner" role="alert">{{ translate("分析之后这件衣物已被修改，请重新分析后再生成提议。") }}</p>
+              <p v-if="created" class="done" role="status">{{ translate("已生成待确认提议 #") }}{{ created.proposal_id }}{{ translate("（尚未应用），可在下方提议列表中接受或拒绝。") }}</p>
               <button
                 v-else
                 type="button"
@@ -280,7 +279,7 @@ const show = (v: string | null) => v ?? "（空）";
                 :disabled="generating || !chosen || outdated || unchanged"
                 @click="generate"
               >
-                {{ generating ? "生成中…" : unchanged ? "与当前颜色相同" : "生成待确认提议" }}
+                {{ generating ? translate("生成中…") : unchanged ? translate("与当前颜色相同") : translate("生成待确认提议") }}
               </button>
             </template>
           </template>

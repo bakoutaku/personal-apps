@@ -3,7 +3,7 @@ import ApplicationServices
 
 struct MonitorReport {
     var observations: [Observation]
-    var diagnostic: String
+    var diagnostic: () -> String
     var trusted: Bool
 }
 
@@ -62,10 +62,10 @@ final class ClaudeObserver {
 
     private func scan() -> MonitorReport {
         guard AXIsProcessTrusted() else {
-            return MonitorReport(observations: [], diagnostic: "需要辅助功能权限。菜单 → 开启辅助功能设置。", trusted: false)
+            return MonitorReport(observations: [], diagnostic: { localized("需要辅助功能权限。菜单 → 开启辅助功能设置。") }, trusted: false)
         }
         guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: Self.bundleID).first else {
-            return MonitorReport(observations: [Observation(session: "", title: "Claude", buttons: [], readable: false, running: false)], diagnostic: "Claude 尚未运行。", trusted: true)
+            return MonitorReport(observations: [Observation(session: "", title: "Claude", buttons: [], readable: false, running: false)], diagnostic: { localized("Claude 尚未运行。") }, trusted: true)
         }
         let root = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetMessagingTimeout(root, 0.2)
@@ -74,7 +74,7 @@ final class ClaudeObserver {
         AXUIElementSetAttributeValue(root, "AXManualAccessibility" as CFString, kCFBooleanTrue)
         let windows = elements(root, kAXWindowsAttribute).prefix(4)
         var observations: [Observation] = []
-        var counts: [String] = []
+        var counts: [() -> String] = []
         for window in windows {
             // Visit the newest/lower branches first (usually the composer),
             // instead of letting a long transcript consume the whole budget.
@@ -121,10 +121,22 @@ final class ClaudeObserver {
             let truncated = incomplete
             observations.append(Observation(session: session, title: identity.title, buttons: buttons, readable: readable && seenWeb, truncated: truncated))
             let observation = observations[observations.count - 1]
-            let judgment = truncated ? (observation.hasUsableEvidence ? "仅采用明确的工作/授权控件" : "证据不足，未判断完成") : "完整扫描"
+            let judgment = truncated
+                ? (observation.hasUsableEvidence ? "仅采用明确的工作/授权控件" : "证据不足，未判断完成")
+                : "完整扫描"
+            let seen = readable && seenWeb
+            let elapsed = Int((ProcessInfo.processInfo.systemUptime - started) * 1000)
+            let titleSource = identity.title == ConversationIdentity.fallbackTitle ? "通用名称" : "原生窗口标题"
             let known = Set(buttons.map(ControlClassifier.normalized)).intersection(ControlClassifier.stops.union(ControlClassifier.allows).union(ControlClassifier.denies).union(ControlClassifier.senders).union(ControlClassifier.composers)).sorted()
-            counts.append("控件 \(cursor) · 可读 \(readable && seenWeb ? "是" : "否") · 会话标识 \(identity.sourceDescription) · 标题来源 \(identity.title == "Claude 当前会话" ? "通用名称" : "原生窗口标题") · 完整 \(!truncated ? "是" : "否") · 用时 \(Int((ProcessInfo.processInfo.systemUptime - started) * 1000))ms · 判断 \(judgment) · 状态控件 \(known.joined(separator: "/"))")
+            let labelSummary = known.joined(separator: "/")
+            let count = cursor
+            counts.append {
+                localized("控件 {0} · 可读 {1} · 会话标识 {2} · 标题来源 {3} · 完整 {4} · 用时 {5}ms · 判断 {6} · 状态控件 {7}",
+                          count, localized(seen ? "是" : "否"), localized(identity.sourceDescription),
+                          localized(titleSource), localized(truncated ? "否" : "是"), elapsed,
+                          localized(judgment), labelSummary)
+            }
         }
-        return MonitorReport(observations: observations, diagnostic: counts.isEmpty ? "Claude 窗口不可读取；可能已隐藏或最小化。" : counts.joined(separator: "\n"), trusted: true)
+        return MonitorReport(observations: observations, diagnostic: { counts.isEmpty ? localized("Claude 窗口不可读取；可能已隐藏或最小化。") : counts.map { $0() }.joined(separator: "\n") }, trusted: true)
     }
 }

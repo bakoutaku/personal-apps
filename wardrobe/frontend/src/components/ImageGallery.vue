@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 多图展示：主图（原图，完整显示）+ 缩略图条。左右方向键切换。
 import { computed, ref, watch } from "vue";
 import type { ImageInfo } from "../api/types";
@@ -23,14 +24,14 @@ function move(delta: number) {
   <div class="gallery" @keydown.left.prevent="move(-1)" @keydown.right.prevent="move(1)">
     <div class="main" :style="!current && fallbackColor ? { background: fallbackColor } : undefined">
       <img v-if="current && !failedUrls.has(current.url)" :key="current.url" :src="current.url" :alt="alt" @error="failedUrls.add(current.url)" />
-      <span v-else class="no-image">{{ current ? "图片加载失败" : "暂无图片" }}</span>
+      <span v-else class="no-image">{{ current ? translate("图片加载失败") : translate("暂无图片") }}</span>
       <template v-if="images.length > 1">
-        <button type="button" class="nav prev" aria-label="上一张" @click="move(-1)">‹</button>
-        <button type="button" class="nav next" aria-label="下一张" @click="move(1)">›</button>
+        <button type="button" class="nav prev" :aria-label='translate("上一张")' @click="move(-1)">‹</button>
+        <button type="button" class="nav next" :aria-label='translate("下一张")' @click="move(1)">›</button>
         <span class="position">{{ index + 1 }} / {{ images.length }}</span>
       </template>
     </div>
-    <ul v-if="images.length > 1" class="thumbs" role="listbox" aria-label="图片">
+    <ul v-if="images.length > 1" class="thumbs" role="listbox" :aria-label='translate("图片")'>
       <li v-for="(img, i) in images" :key="img.id">
         <button
           type="button"
@@ -40,13 +41,13 @@ function move(delta: number) {
           :class="{ active: i === index }"
           @click="index = i"
         >
-          <img :src="img.thumb_url" :alt="`${alt}（第 ${i + 1} 张）`" loading="lazy" />
+          <img :src="img.thumb_url" :alt="translate('{0}（第 {1} 张）', alt, i + 1)" loading="lazy" />
         </button>
       </li>
     </ul>
     <p v-if="current?.source_note || current?.source_url" class="source muted">
-      图片来源：{{ current.source_note ?? "" }}
-      <a v-if="current.source_url" :href="current.source_url" target="_blank" rel="noopener noreferrer">链接</a>
+      {{ translate("图片来源：") }}{{ current.source_note ?? "" }}
+      <a v-if="current.source_url" :href="current.source_url" target="_blank" rel="noopener noreferrer">{{ translate("链接") }}</a>
     </p>
   </div>
 </template>

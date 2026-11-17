@@ -4,6 +4,10 @@ English · [简体中文](README.md) · [日本語](README.ja.md)
 
 An unofficial macOS desktop companion for Claude. It shows a draggable mascot and local status cards for activity, approval requests, and the end of a response. Built with Swift, AppKit, and SwiftUI with GPT assistance.
 
+## Interface language
+
+Open ✦ in the menu bar and choose Interface language → 简体中文, 日本語, or English. You can also switch from the character’s context menu or the Activity window. The companion starts in Simplified Chinese and remembers the selection across launches. Claude window controls are recognized using separate matchers.
+
 ## Screenshots
 
 The mascot window running in the public preview.
@@ -16,7 +20,7 @@ Run the build from this folder with macOS 14 or later and Xcode Command Line Too
 
 ~~~sh
 ./build.sh
-open 'dist/Claude Companion Preview.app'
+open 'dist/Claude Companion Preview.app' --args --demo-only
 ~~~
 
 ## Claude Desktop integration

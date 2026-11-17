@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { computed, ref, watch } from "vue";
 import type { ItemSummary } from "../api/types";
 import { STATUS_LABELS, label } from "../lib/labels";
@@ -27,7 +28,7 @@ const statusLabel = computed(() => (props.item.status === "owned" ? null : label
       <span v-if="statusLabel" class="status">{{ statusLabel }}</span>
     </div>
     <div class="meta">
-      <div class="brand">{{ item.brand ?? "无品牌" }}</div>
+      <div class="brand">{{ item.brand ?? translate("无品牌") }}</div>
       <div class="name">{{ item.name }}</div>
       <div v-if="secondary" class="name-zh">{{ secondary }}</div>
       <div class="facts">

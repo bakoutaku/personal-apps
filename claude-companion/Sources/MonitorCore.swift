@@ -5,6 +5,7 @@ enum Activity: String, Codable { case idle, working, approval, completed, unknow
 /// Only conversation URLs identify sessions. Native window titles are display
 /// metadata, never identity; arbitrary AX headings are not read at all.
 struct ConversationIdentity {
+    static let fallbackTitle = "Claude 当前会话"
     let session: String
     let title: String
     let sourceDescription: String
@@ -32,7 +33,7 @@ struct ConversationIdentity {
         let title = windowTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         let isGeneric = ["claude", "claude desktop", "claude cowork", "cowork"].contains(title.lowercased())
         let displayTitle = !title.isEmpty && title.count <= 120 && !isGeneric && !title.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) })
-            ? title : "Claude 当前会话"
+            ? title : fallbackTitle
         return ConversationIdentity(session: keys.count == 1 ? keys.first! : "", title: displayTitle,
                                     sourceDescription: keys.count == 1 ? "会话地址" : (keys.isEmpty ? "无可靠会话地址" : "会话地址冲突"))
     }

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { errorMessage } from "../lib/errors";
+import { t as translate } from "../i18n";
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import { useDelayedLoading } from "../lib/useDelayedLoading";
 import type { Brand, CategoryNode, Facets, ItemSummary } from "../api/types";
 import FilterPanel from "../components/FilterPanel.vue";
@@ -26,9 +28,9 @@ const brands = ref<Brand[]>([]);
 const loading = ref(true);
 const showLoading = useDelayedLoading(loading);
 const loadingMore = ref(false);
-const error = ref<string | null>(null);
-const paginationError = ref<string | null>(null);
-const dictionaryError = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
+const paginationError = ref<(() => string) | null>(null);
+const dictionaryError = ref<(() => string) | null>(null);
 const drawerOpen = ref(false);
 const search = ref(filters.value.q);
 const sidebar = ref<HTMLElement | null>(null);
@@ -160,7 +162,7 @@ async function load(restoreCount = 0) {
     rememberList();
   } catch (e) {
     if (id !== requestId) return;
-    error.value = e instanceof ApiError ? e.message : String(e);
+    error.value = () => errorMessage(e);
     if (!restoreCount) {
       items.value = [];
       total.value = 0;
@@ -188,7 +190,7 @@ async function loadMore() {
       rememberList();
     }
   } catch (e) {
-    if (id === requestId) paginationError.value = e instanceof ApiError ? e.message : String(e);
+    if (id === requestId) paginationError.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loadingMore.value = false;
   }
@@ -254,7 +256,7 @@ async function loadDictionaries() {
     brands.value = b.items;
     dictionaryError.value = null;
   } catch (e) {
-    dictionaryError.value = e instanceof ApiError ? e.message : String(e);
+    dictionaryError.value = () => errorMessage(e);
   }
 }
 onMounted(loadDictionaries);
@@ -283,14 +285,14 @@ const chips = computed(() => {
   const names: Record<(typeof LIST_KEYS)[number], (v: string) => string> = {
     brand: (v) => brands.value.find((b) => b.slug === v)?.name ?? v,
     color: (v) => COLOR_FAMILIES.find((c) => c.key === v)?.label ?? v,
-    size: (v) => `尺码 ${v}`,
+    size: (v) => translate("尺码 {0}", v),
     tag: (v) => `#${v}`,
     material: (v) => label(FIBER_LABELS, v),
   };
   for (const k of LIST_KEYS)
     for (const v of f[k]) out.push({ key: `${k}:${v}`, text: names[k](v), patch: { [k]: f[k].filter((x) => x !== v) } });
   if (f.status !== "owned")
-    out.push({ key: "status", text: f.status === "all" ? "全部状态" : label(STATUS_LABELS, f.status), patch: { status: "owned" } });
+    out.push({ key: "status", text: f.status === "all" ? translate("全部状态") : label(STATUS_LABELS, f.status), patch: { status: "owned" } });
   return out;
 });
 
@@ -305,10 +307,10 @@ function clearAll() {
 
 <template>
   <div class="layout">
-    <aside id="wardrobe-filters" ref="sidebar" class="sidebar" :class="{ open: drawerOpen }" :role="drawerOpen ? 'dialog' : undefined" :aria-modal="drawerOpen || undefined" aria-label="筛选">
+    <aside id="wardrobe-filters" ref="sidebar" class="sidebar" :class="{ open: drawerOpen }" :role="drawerOpen ? 'dialog' : undefined" :aria-modal="drawerOpen || undefined" :aria-label='translate("筛选")'>
       <div class="drawer-head">
-        <h2>筛选</h2>
-        <button type="button" class="link-btn" @click="drawerOpen = false">完成</button>
+        <h2>{{ translate("筛选") }}</h2>
+        <button type="button" class="link-btn" @click="drawerOpen = false">{{ translate("完成") }}</button>
       </div>
       <FilterPanel :filters="filters" :facets="facets" :categories="categories" :brands="brands" @change="update" />
     </aside>
@@ -317,21 +319,21 @@ function clearAll() {
     <section class="content" :aria-busy="loading">
       <div class="toolbar">
         <div class="title-row">
-          <h1>我的衣橱</h1>
-          <span class="count" aria-live="polite">{{ showLoading ? "加载中…" : loading && !items.length ? "" : `${total} 件` }}</span>
-          <RouterLink :to="{ name: 'item-new' }" class="btn small add">添加衣物</RouterLink>
+          <h1>{{ translate("我的衣橱") }}</h1>
+          <span class="count" aria-live="polite">{{ showLoading ? translate("加载中…") : loading && !items.length ? "" : translate("{0} 件", total) }}</span>
+          <RouterLink :to="{ name: 'item-new' }" class="btn small add">{{ translate("添加衣物") }}</RouterLink>
         </div>
         <div class="controls">
           <label class="search">
-            <span class="visually-hidden">搜索</span>
+            <span class="visually-hidden">{{ translate("搜索") }}</span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
-            <input v-model="search" type="search" placeholder="搜索名称、编号、颜色、材质、标签…" autocomplete="off" />
+            <input v-model="search" type="search" :placeholder='translate("搜索名称、编号、颜色、材质、标签…")' autocomplete="off" />
           </label>
           <button ref="filterToggle" type="button" class="btn ghost filter-toggle" aria-controls="wardrobe-filters" :aria-expanded="drawerOpen" @click="drawerOpen = true">
-            筛选<span v-if="nActive" class="badge">{{ nActive }}</span>
+            {{ translate("筛选") }}<span v-if="nActive" class="badge">{{ nActive }}</span>
           </button>
           <label class="sort">
-            <span class="visually-hidden">排序</span>
+            <span class="visually-hidden">{{ translate("排序") }}</span>
             <select :value="filters.sort" @change="update({ sort: ($event.target as HTMLSelectElement).value })">
               <option v-for="o in SORT_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
             </select>
@@ -340,15 +342,15 @@ function clearAll() {
         <QuickGroups :groups="facets?.groups" :selected="filters.group" @select="(key) => update({ group: key })" />
         <div v-if="chips.length" class="chips">
           <button v-for="c in chips" :key="c.key" type="button" class="chip removable" @click="update(c.patch)">
-            {{ c.text }} <span aria-hidden="true">×</span><span class="visually-hidden">移除</span>
+            {{ c.text }} <span aria-hidden="true">×</span><span class="visually-hidden">{{ translate("移除") }}</span>
           </button>
-          <button type="button" class="link-btn" @click="clearAll">清除全部</button>
+          <button type="button" class="link-btn" @click="clearAll">{{ translate("清除全部") }}</button>
         </div>
       </div>
 
-      <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
-      <p v-if="dictionaryError" class="error-banner" role="alert">{{ dictionaryError }}</p>
-      <p v-if="paginationError" class="error-banner" role="alert">{{ paginationError }}</p>
+      <p v-if="error" class="error-banner" role="alert">{{ error?.() }}</p>
+      <p v-if="dictionaryError" class="error-banner" role="alert">{{ dictionaryError?.() }}</p>
+      <p v-if="paginationError" class="error-banner" role="alert">{{ paginationError?.() }}</p>
 
       <ul v-if="showLoading && !items.length" class="grid" aria-hidden="true">
         <li v-for="n in 10" :key="n"><div class="skeleton frame-skel" /></li>
@@ -358,20 +360,20 @@ function clearAll() {
       </ul>
       <div v-else-if="!loading && !error" class="empty">
         <template v-if="nActive">
-          <p>没有符合条件的衣物。</p>
-          <button type="button" class="btn ghost" @click="clearAll">清除筛选条件</button>
+          <p>{{ translate("没有符合条件的衣物。") }}</p>
+          <button type="button" class="btn ghost" @click="clearAll">{{ translate("清除筛选条件") }}</button>
         </template>
         <template v-else>
-          <p>衣橱里还没有衣物。</p>
+          <p>{{ translate("衣橱里还没有衣物。") }}</p>
           <p class="muted">
-            可以<RouterLink :to="{ name: 'item-new' }">添加衣物</RouterLink>，或在<RouterLink :to="{ name: 'imports' }">导入中心</RouterLink>批量导入 JSON。
+            {{ translate("可以") }}<RouterLink :to="{ name: 'item-new' }">{{ translate("添加衣物") }}</RouterLink>{{ translate("，或在") }}<RouterLink :to="{ name: 'imports' }">{{ translate("导入中心") }}</RouterLink>{{ translate("批量导入 JSON。") }}
           </p>
         </template>
       </div>
 
       <div v-if="hasMore && !loading" class="more">
         <button type="button" class="btn ghost" :disabled="loadingMore" @click="loadMore">
-          {{ loadingMore ? "加载中…" : `加载更多（还有 ${total - items.length} 件）` }}
+          {{ loadingMore ? translate("加载中…") : translate("加载更多（还有 {0} 件）", total - items.length) }}
         </button>
       </div>
     </section>

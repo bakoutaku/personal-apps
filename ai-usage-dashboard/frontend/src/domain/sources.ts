@@ -1,19 +1,20 @@
+import { t as translate } from "../i18n";
 import type { Product, Source, SourceErrorCode } from '../api/types';
 import { productName } from './quota';
 
 /** contracts/source-errors.md 的固定表；不显示供应商 message 原文。 */
 export const ERROR_TEXT: Record<SourceErrorCode, { title: string; action: string }> = {
-  source_unreadable: { title: '无法读取来源', action: '检查来源是否仍可访问，查看本机诊断' },
-  source_missing: { title: '来源文件或目录不存在', action: '在本机设置中重新选择来源' },
-  permission_denied: { title: '没有读取权限', action: '检查所选来源的读取权限，不建议一键授予全磁盘权限' },
-  unsupported_format: { title: '当前版本无法识别记录格式', action: '更新适配器；保留已有历史，不清库' },
-  auth_required: { title: '来源尚未登录', action: '通过对应官方客户端登录；不在网页填供应商密码' },
-  auth_expired: { title: '来源登录状态已失效', action: '在官方客户端重新登录' },
-  rate_limited: { title: '来源暂时限制查询', action: '按计划等待；不以密集重试绕过限制' },
-  network_unavailable: { title: '暂时无法连接来源服务', action: '检查网络，保留本机历史' },
-  source_timeout: { title: '来源响应超时', action: '稍后重试，显示原有历史' },
-  collector_internal_error: { title: '采集过程发生错误', action: '查看已脱敏的本机诊断' },
-  unknown_error: { title: '暂时无法更新来源', action: '保留现有数据，查看本机诊断' },
+  source_unreadable: { get title() { return translate("无法读取来源"); }, get action() { return translate("检查来源是否仍可访问，查看本机诊断"); } },
+  source_missing: { get title() { return translate("来源文件或目录不存在"); }, get action() { return translate("在本机设置中重新选择来源"); } },
+  permission_denied: { get title() { return translate("没有读取权限"); }, get action() { return translate("检查所选来源的读取权限，不建议一键授予全磁盘权限"); } },
+  unsupported_format: { get title() { return translate("当前版本无法识别记录格式"); }, get action() { return translate("更新适配器；保留已有历史，不清库"); } },
+  auth_required: { get title() { return translate("来源尚未登录"); }, get action() { return translate("通过对应官方客户端登录；不在网页填供应商密码"); } },
+  auth_expired: { get title() { return translate("来源登录状态已失效"); }, get action() { return translate("在官方客户端重新登录"); } },
+  rate_limited: { get title() { return translate("来源暂时限制查询"); }, get action() { return translate("按计划等待；不以密集重试绕过限制"); } },
+  network_unavailable: { get title() { return translate("暂时无法连接来源服务"); }, get action() { return translate("检查网络，保留本机历史"); } },
+  source_timeout: { get title() { return translate("来源响应超时"); }, get action() { return translate("稍后重试，显示原有历史"); } },
+  collector_internal_error: { get title() { return translate("采集过程发生错误"); }, get action() { return translate("查看已脱敏的本机诊断"); } },
+  unknown_error: { get title() { return translate("暂时无法更新来源"); }, get action() { return translate("保留现有数据，查看本机诊断"); } },
 };
 
 export function errorText(code: string | null): { title: string; action: string } | null {
@@ -22,21 +23,21 @@ export function errorText(code: string | null): { title: string; action: string 
 }
 
 export const CONNECTION_TEXT: Record<Source['connection_status'], string> = {
-  available: '可用',
-  not_configured: '未配置',
-  error: '同步失败',
-  disabled: '已停用',
+  get available() { return translate("可用"); },
+  get not_configured() { return translate("未配置"); },
+  get error() { return translate("同步失败"); },
+  get disabled() { return translate("已停用"); },
 };
 
 const KIND_TEXT: Record<Source['kind'], string> = {
-  local_log: '本机日志',
-  official_client: '官方客户端',
-  manual: '手动记录',
-  telemetry: '遥测',
+  get local_log() { return translate("本机日志"); },
+  get official_client() { return translate("官方客户端"); },
+  get manual() { return translate("手动记录"); },
+  get telemetry() { return translate("遥测"); },
 };
 
 export function sourceName(s: Source, providerLabel: string): string {
-  if (!s.product) return `${providerLabel} · ${KIND_TEXT[s.kind]}（产品未指定）`;
+  if (!s.product) return translate("{0} · {1}（产品未指定）", providerLabel, KIND_TEXT[s.kind]);
   return `${productName(s.product)} · ${KIND_TEXT[s.kind]}`;
 }
 
@@ -53,10 +54,10 @@ export function coverageSummary(s: Source): CoverageSummary {
 }
 
 export const COVERAGE_TEXT: Record<CoverageSummary, string> = {
-  complete: '已覆盖',
-  partial: '部分覆盖',
-  gap: '存在缺口',
-  unknown: '未知',
+  get complete() { return translate("已覆盖"); },
+  get partial() { return translate("部分覆盖"); },
+  get gap() { return translate("存在缺口"); },
+  get unknown() { return translate("未知"); },
 };
 
 /**
@@ -65,13 +66,13 @@ export const COVERAGE_TEXT: Record<CoverageSummary, string> = {
  * 与契约表的一致性由 sources.test.ts 校验。
  */
 export const REASON_TEXT: Record<string, string> = {
-  local_device_only: '仅本机日志，其他设备未覆盖',
-  no_records_not_proof_of_zero: '没有已记录事件，不等于没有使用',
-  selected_products_not_configured: '所选产品中有未接入的来源',
-  not_yet_elapsed: '该时段尚未发生',
-  synthetic_local_history: '模拟本机历史，仅包含样例记录',
-  collector_could_not_read_source: '采集时无法读取来源，此段覆盖存在缺口',
-  one_event_has_unknown_usage: '该桶中有一条记录的用量未知',
+  get local_device_only() { return translate("仅本机日志，其他设备未覆盖"); },
+  get no_records_not_proof_of_zero() { return translate("没有已记录事件，不等于没有使用"); },
+  get selected_products_not_configured() { return translate("所选产品中有未接入的来源"); },
+  get not_yet_elapsed() { return translate("该时段尚未发生"); },
+  get synthetic_local_history() { return translate("模拟本机历史，仅包含样例记录"); },
+  get collector_could_not_read_source() { return translate("采集时无法读取来源，此段覆盖存在缺口"); },
+  get one_event_has_unknown_usage() { return translate("该桶中有一条记录的用量未知"); },
 };
 
 export const UNKNOWN_REASON_TEXT = '未识别的覆盖原因';
@@ -81,7 +82,7 @@ export function isKnownReason(code: string): boolean {
 }
 
 export function reasonText(code: string): string {
-  return isKnownReason(code) ? REASON_TEXT[code]! : UNKNOWN_REASON_TEXT;
+  return isKnownReason(code) ? REASON_TEXT[code]! : translate(UNKNOWN_REASON_TEXT);
 }
 
 export type ProductStatus = 'available' | 'error' | 'not_configured' | 'disabled' | 'none';

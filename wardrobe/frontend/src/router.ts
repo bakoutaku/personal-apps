@@ -1,3 +1,5 @@
+import { t as translate } from "./i18n";
+import { watchEffect } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import ImportCenterView from "./views/ImportCenterView.vue";
 import ImportJobView from "./views/ImportJobView.vue";
@@ -45,9 +47,7 @@ export const router = createRouter({
   },
 });
 
-router.afterEach((to, _from, failure) => {
-  // 被取消的导航（例如未保存修改时选择留在本页）不改标题
-  if (failure) return;
-  const title = to.meta.title as string | undefined;
-  if (title) document.title = `${title} · Wardrobe`;
+watchEffect(() => {
+  const title = router.currentRoute.value.meta.title;
+  document.title = typeof title === "string" ? `${translate(title)} · Wardrobe` : "Wardrobe";
 });

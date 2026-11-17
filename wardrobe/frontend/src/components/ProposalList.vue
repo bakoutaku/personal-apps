@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 修改提议列表：逐条或勾选后批量接受 / 拒绝。接受时后端会按记录当前状态重新校验。
 import { computed, ref, watch } from "vue";
 import { api } from "../api/client";
 import type { Proposal } from "../api/types";
 import { dict, loadDictionaries } from "../lib/dictionaries";
-import { errorMessage } from "../lib/errors";
+import { apiErrorText, errorMessage } from "../lib/errors";
 import { formatTime, formatValue } from "../lib/format";
 import { ENTITY_LABELS, FIELD_LABELS, PROPOSAL_STATUS_LABELS, label } from "../lib/labels";
 import { notify } from "../lib/toast";
@@ -54,7 +55,7 @@ function groupRows(p: Proposal) {
 function shown(p: Proposal, v: unknown): string {
   if (p.field === "category_id" && typeof v === "number") {
     const c = dict.flatCategories.find((x) => x.id === v);
-    return c ? `${c.name_zh}（#${v}）` : `分类 #${v}`;
+    return c ? `${c.name_zh}（#${v}）` : translate("分类 #{0}", v);
   }
   return formatValue(v);
 }
@@ -68,9 +69,9 @@ function ruleReasons(p: Proposal): string[] {
 
 // 来源说明按提议生成时的规则版本：tagcat/3 起标签也来自商品名称中的常用叫法，旧提议保持原说法
 function ruleSource(ctx: NonNullable<Proposal["rule_context"]>): string {
-  if (ctx.kind === "category") return "根据商品名称中的分类名称";
+  if (ctx.kind === "category") return translate("根据商品名称中的分类名称");
   const version = Number(/^wardrobe-tagcat\/(\d+)$/.exec(ctx.algorithm)?.[1] ?? 0);
-  return version >= 3 ? "根据同一商品的其他衣物、同类相似衣物的标签和商品名称中的常用叫法" : "根据同一商品的其他衣物和同类相似衣物的标签";
+  return version >= 3 ? translate("根据同一商品的其他衣物、同类相似衣物的标签和商品名称中的常用叫法") : translate("根据同一商品的其他衣物和同类相似衣物的标签");
 }
 
 function targetLink(p: Proposal) {
@@ -84,7 +85,7 @@ async function decide(p: Proposal, decision: "accept" | "reject") {
   delete errors.value[p.proposal_id];
   try {
     await (decision === "accept" ? api.acceptProposal(p.proposal_id) : api.rejectProposal(p.proposal_id));
-    notify(decision === "accept" ? "已接受提议" : "已拒绝提议");
+    notify(decision === "accept" ? translate("已接受提议") : translate("已拒绝提议"));
     emit("changed");
   } catch (e) {
     errors.value = { ...errors.value, [p.proposal_id]: errorMessage(e) };
@@ -99,9 +100,9 @@ async function bulk(decision: "accept" | "reject") {
   try {
     const res = await api.bulkProposals(selected.value, decision);
     const next: Record<number, string> = {};
-    for (const r of res.results) if (!r.ok && r.error) next[r.proposal_id] = r.error.message;
+    for (const r of res.results) if (!r.ok && r.error) next[r.proposal_id] = apiErrorText(r.error.code, r.error.message);
     errors.value = next;
-    notify(`${decision === "accept" ? "接受" : "拒绝"}：成功 ${res.succeeded} 条${res.failed ? `，失败 ${res.failed} 条（原因见列表）` : ""}`, {
+    notify(translate("{0}：成功 {1} 条{2}", decision === "accept" ? translate("接受") : translate("拒绝"), res.succeeded, res.failed ? translate("，失败 {0} 条（原因见列表）", res.failed) : ""), {
       kind: res.failed ? "error" : "info",
     });
     selected.value = selected.value.filter((id) => next[id]);
@@ -115,20 +116,20 @@ async function bulk(decision: "accept" | "reject") {
 </script>
 
 <template>
-  <section class="proposals" :aria-label="title || '修改提议'">
+  <section class="proposals" :aria-label="title || translate('修改提议')">
     <div class="head">
       <h2 v-if="title">{{ title }}</h2>
       <div v-if="pending.length > 1" class="actions">
-        <label class="field check"><input type="checkbox" :checked="allSelected" @change="toggleAll" /><span>全选</span></label>
-        <button type="button" class="btn small" :disabled="busy || !selected.length" @click="bulk('accept')">接受所选（{{ selected.length }}）</button>
-        <button type="button" class="btn ghost small" :disabled="busy || !selected.length" @click="bulk('reject')">拒绝所选</button>
+        <label class="field check"><input type="checkbox" :checked="allSelected" @change="toggleAll" /><span>{{ translate("全选") }}</span></label>
+        <button type="button" class="btn small" :disabled="busy || !selected.length" @click="bulk('accept')">{{ translate("接受所选（") }}{{ selected.length }}）</button>
+        <button type="button" class="btn ghost small" :disabled="busy || !selected.length" @click="bulk('reject')">{{ translate("拒绝所选") }}</button>
       </div>
     </div>
     <ul>
       <li v-for="p in proposals" :key="p.proposal_id" class="proposal" :data-testid="`proposal-${p.proposal_id}`">
         <div class="line1">
           <label v-if="p.status === 'pending' && pending.length > 1" class="pick">
-            <input v-model="selected" type="checkbox" :value="p.proposal_id" :aria-label="`选择提议 ${p.proposal_id}`" />
+            <input v-model="selected" type="checkbox" :value="p.proposal_id" :aria-label="translate('选择提议 {0}', p.proposal_id)" />
           </label>
           <strong>{{ label(FIELD_LABELS, p.field) }}</strong>
           <span v-if="showTarget" class="muted">
@@ -138,41 +139,40 @@ async function bulk(decision: "accept" | "reject") {
           </span>
           <span class="badge" :class="{ warn: p.status === 'pending' }">{{ label(PROPOSAL_STATUS_LABELS, p.status) }}</span>
         </div>
-        <table v-if="groupRows(p)" class="group" :aria-label="`${label(FIELD_LABELS, p.field)}的整组前后对比`">
-          <thead><tr><th></th><th>当前</th><th>接受后</th></tr></thead>
+        <table v-if="groupRows(p)" class="group" :aria-label="translate('{0}的整组前后对比', label(FIELD_LABELS, p.field))">
+          <thead><tr><th></th><th>{{ translate("当前") }}</th><th>{{ translate("接受后") }}</th></tr></thead>
           <tbody>
             <tr v-for="r in groupRows(p)!" :key="r.key">
               <th>{{ r.label }}</th>
               <td>{{ r.before }}</td>
-              <td class="new" :class="{ clears: r.clears }">{{ r.after }}<span v-if="r.clears" class="clear-tag">将清空</span></td>
+              <td class="new" :class="{ clears: r.clears }">{{ r.after }}<span v-if="r.clears" class="clear-tag">{{ translate("将清空") }}</span></td>
             </tr>
           </tbody>
         </table>
         <dl v-else class="diff">
-          <div><dt>当前</dt><dd>{{ shown(p, p.current_value) }}</dd></div>
-          <div><dt>{{ p.field === "tags_add" ? "追加" : "建议" }}</dt><dd class="new">{{ shown(p, p.proposed_value) }}</dd></div>
+          <div><dt>{{ translate("当前") }}</dt><dd>{{ shown(p, p.current_value) }}</dd></div>
+          <div><dt>{{ p.field === "tags_add" ? translate("追加") : translate("建议") }}</dt><dd class="new">{{ shown(p, p.proposed_value) }}</dd></div>
         </dl>
         <div v-if="p.rule_context" class="rule-source" data-testid="rule-source">
-          来源：规则建议（{{ p.rule_context.algorithm }}，{{ ruleSource(p.rule_context) }}，不是图像识别）<template v-if="p.field === 'tags_add'">；接受时只追加，不删除已有标签</template>
+          {{ translate("来源：规则建议（") }}{{ p.rule_context.algorithm }}，{{ ruleSource(p.rule_context) }}{{ translate("，不是图像识别）") }}<template v-if="p.field === 'tags_add'">{{ translate("；接受时只追加，不删除已有标签") }}</template>
           <ul><li v-for="(r, i) in ruleReasons(p)" :key="i">{{ r }}</li></ul>
         </div>
         <p v-if="p.ai_context" class="ai-source" data-testid="ai-source">
           <span class="swatch" :style="{ background: p.ai_context.candidate.hex }" aria-hidden="true" />
           <span>
-            来源：本地照片颜色分析（{{ p.ai_context.algorithm }}，像素统计，不是语义识别）· 照片
-            {{ p.ai_context.image_id === null ? "（已删除）" : `#${p.ai_context.image_id}` }}
-            {{ p.ai_context.region ? "的选定区域" : "整图" }} · 候选 {{ p.ai_context.candidate.hex }}，像素占比 {{ Math.round(p.ai_context.candidate.pixel_share * 100) }}%
-            · 生成时衣物版本 {{ p.ai_context.target_version }}（衣物之后有任何修改，接受时会提示已过期）
+            {{ translate("来源：本地照片颜色分析（") }}{{ p.ai_context.algorithm }}{{ translate("，像素统计，不是语义识别）· 照片") }}
+            {{ p.ai_context.image_id === null ? translate("（已删除）") : `#${p.ai_context.image_id}` }}
+            {{ p.ai_context.region ? translate("的选定区域") : translate("整图") }} {{ translate("· 候选") }} {{ p.ai_context.candidate.hex }}{{ translate("，像素占比") }} {{ Math.round(p.ai_context.candidate.pixel_share * 100) }}{{ translate("% · 生成时衣物版本") }} {{ p.ai_context.target_version }}{{ translate("（衣物之后有任何修改，接受时会提示已过期）") }}
           </span>
         </p>
         <p class="meta muted">
-          来自 {{ p.actor }}<template v-if="p.import_job_id">（<RouterLink :to="{ name: 'import', params: { id: p.import_job_id } }">导入批次 {{ p.import_job_id }}</RouterLink>）</template>
+          {{ translate("来自") }} {{ p.actor }}<template v-if="p.import_job_id">（<RouterLink :to="{ name: 'import', params: { id: p.import_job_id } }">{{ translate("导入批次") }} {{ p.import_job_id }}</RouterLink>）</template>
           · {{ formatTime(p.created_at) }}<template v-if="p.reason"> · {{ p.reason }}</template>
         </p>
         <p v-if="errors[p.proposal_id]" class="field-error" role="alert">{{ errors[p.proposal_id] }}</p>
         <div v-if="p.status === 'pending'" class="actions">
-          <button type="button" class="btn small" :disabled="busy" @click="decide(p, 'accept')">接受</button>
-          <button type="button" class="btn ghost small" :disabled="busy" @click="decide(p, 'reject')">拒绝</button>
+          <button type="button" class="btn small" :disabled="busy" @click="decide(p, 'accept')">{{ translate("接受") }}</button>
+          <button type="button" class="btn ghost small" :disabled="busy" @click="decide(p, 'reject')">{{ translate("拒绝") }}</button>
         </div>
       </li>
     </ul>

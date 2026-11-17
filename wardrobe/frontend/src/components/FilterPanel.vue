@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { computed } from "vue";
 import type { Brand, CategoryNode, Facets } from "../api/types";
 import { type Filters, type ListKey, toggle } from "../lib/filters";
@@ -62,7 +63,7 @@ const statusOptions = computed(() => {
   const rest = Object.keys(c)
     .filter((k) => k !== "owned")
     .map((k) => ({ value: k, label: label(STATUS_LABELS, k), n: c[k] }));
-  return [{ value: "owned", label: "持有中", n: c.owned ?? 0 }, ...rest, { value: "all", label: "全部", n: all }];
+  return [{ value: "owned", label: translate("持有中"), n: c.owned ?? 0 }, ...rest, { value: "all", label: translate("全部"), n: all }];
 });
 
 function flip(key: ListKey, value: string) {
@@ -73,7 +74,7 @@ function flip(key: ListKey, value: string) {
 <template>
   <div class="panel">
     <section>
-      <h3>分类</h3>
+      <h3>{{ translate("分类") }}</h3>
       <CategoryTree
         :nodes="categories"
         :counts="counts?.category ?? {}"
@@ -84,7 +85,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section v-if="colorOptions.length">
-      <h3>颜色</h3>
+      <h3>{{ translate("颜色") }}</h3>
       <div class="swatches">
         <button
           v-for="c in colorOptions"
@@ -103,7 +104,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section v-if="brandOptions.length">
-      <h3>品牌</h3>
+      <h3>{{ translate("品牌") }}</h3>
       <label v-for="b in brandOptions" :key="b.slug" class="check">
         <input type="checkbox" :checked="filters.brand.includes(b.slug)" @change="flip('brand', b.slug)" />
         <span>{{ b.name }}</span>
@@ -112,7 +113,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section v-if="sizeOptions.length">
-      <h3>尺码</h3>
+      <h3>{{ translate("尺码") }}</h3>
       <div class="pills">
         <button
           v-for="[s, n] in sizeOptions"
@@ -121,7 +122,7 @@ function flip(key: ListKey, value: string) {
           class="pill"
           :class="{ active: filters.size.includes(s) }"
           :aria-pressed="filters.size.includes(s)"
-          :title="`${n} 件`"
+          :title="translate('{0} 件', n)"
           @click="flip('size', s)"
         >
           {{ s }}
@@ -130,7 +131,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section v-if="tagOptions.length">
-      <h3>标签</h3>
+      <h3>{{ translate("标签") }}</h3>
       <div class="pills">
         <button
           v-for="[t, n] in tagOptions"
@@ -147,7 +148,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section v-if="materialOptions.length">
-      <h3>材质</h3>
+      <h3>{{ translate("材质") }}</h3>
       <label v-for="[m, n] in materialOptions" :key="m" class="check">
         <input type="checkbox" :checked="filters.material.includes(m)" @change="flip('material', m)" />
         <span>{{ label(FIBER_LABELS, m) }}</span>
@@ -156,7 +157,7 @@ function flip(key: ListKey, value: string) {
     </section>
 
     <section>
-      <h3>状态</h3>
+      <h3>{{ translate("状态") }}</h3>
       <label v-for="s in statusOptions" :key="s.value" class="check">
         <input type="radio" name="status" :checked="filters.status === s.value" @change="emit('change', { status: s.value })" />
         <span>{{ s.label }}</span>

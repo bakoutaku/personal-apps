@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 import type { QuotaPool, QuotaSnapshot, QuotaWindow } from '../api/types';
 import { fmtDurationSeconds } from '../time/tz';
 
@@ -10,7 +11,7 @@ export interface CardState {
   percent: number | null;
   overHundred: boolean;
   /** observed_at 为 null 时不把记录时间说成观测时间。 */
-  timeLabel: '最近观测' | '日志记录于';
+  timeLabel: string;
   timeIso: string | null;
 }
 
@@ -22,21 +23,21 @@ export function cardState(w: QuotaWindow): CardState {
     stale: status === 'current' && w.freshness === 'stale',
     percent: snap?.used_percent ?? null,
     overHundred: (snap?.used_percent ?? 0) > 100,
-    timeLabel: snap?.time_basis === 'observed_at' ? '最近观测' : '日志记录于',
+    timeLabel: snap?.time_basis === 'observed_at' ? translate("最近观测") : translate("日志记录于"),
     timeIso: snap ? snap.effective_at : null,
   };
 }
 
 export function snapshotTimeLabel(s: QuotaSnapshot): string {
-  return s.time_basis === 'observed_at' ? '观测于' : '日志记录于';
+  return s.time_basis === 'observed_at' ? translate("观测于") : translate("日志记录于");
 }
 
 /** 按时长起标题；slot 是不透明字符串，不假设 primary 就是五小时。 */
 export function slotTitle(w: Pick<QuotaWindow, 'duration_seconds'>): string {
-  if (w.duration_seconds === 18000) return '五小时窗口';
-  if (w.duration_seconds === 604800) return '七天窗口';
-  if (w.duration_seconds) return `${fmtDurationSeconds(w.duration_seconds)}窗口`;
-  return '时长未知的窗口';
+  if (w.duration_seconds === 18000) return translate("五小时窗口");
+  if (w.duration_seconds === 604800) return translate("七天窗口");
+  if (w.duration_seconds) return translate("{0}窗口", fmtDurationSeconds(w.duration_seconds));
+  return translate("时长未知的窗口");
 }
 
 /** 窗口边界依据的短文案。 */
@@ -45,12 +46,12 @@ export function boundarySourceText(
   w: Pick<QuotaWindow, 'start_source' | 'end_source' | 'duration_seconds'>,
 ): string {
   const src = which === 'start' ? w.start_source : w.end_source;
-  if (src === 'reported') return '来源报告';
-  if (src === 'unknown') return '未知';
+  if (src === 'reported') return translate("来源报告");
+  if (src === 'unknown') return translate("未知");
   if (which === 'start' && w.end_source === 'reported' && w.duration_seconds) {
-    return `推导：结束 − ${Math.round(w.duration_seconds / 60)} 分`;
+    return translate("推导：结束 − {0} 分", Math.round(w.duration_seconds / 60));
   }
-  return '推导';
+  return translate("推导");
 }
 
 export function hasFullBounds(w: QuotaWindow): boolean {
@@ -122,9 +123,9 @@ export function productName(p: string): string {
 
 /** 池的关联产品说明；未列出的产品不视为不共享。 */
 export function poolMembershipText(pool: QuotaPool, allProducts: readonly string[]): string {
-  if (pool.products === null) return '关联产品未知';
+  if (pool.products === null) return translate("关联产品未知");
   const listed = pool.products.map(productName).join(' / ');
   const others = allProducts.filter((p) => !pool.products!.includes(p as never));
-  if (pool.product_membership_complete || others.length === 0) return `关联产品：${listed}`;
-  return `关联产品：${listed} · ${others.map(productName).join(' / ')}：未知`;
+  if (pool.product_membership_complete || others.length === 0) return translate("关联产品：{0}", listed);
+  return translate("关联产品：{0} · {1}：未知", listed, others.map(productName).join(' / '));
 }

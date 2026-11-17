@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { ref } from "vue";
 import { api } from "../api/client";
 import type { ImageInfo } from "../api/types";
@@ -13,10 +14,10 @@ const props = withDefaults(
     disabled?: boolean;
     onUploaded?: (image: ImageInfo) => boolean | void | Promise<boolean | void>;
   }>(),
-  { label: "上传图片", sourceType: "user_photo", disabled: false, onUploaded: undefined },
+  { label: translate("上传图片"), sourceType: "user_photo", disabled: false, onUploaded: undefined },
 );
 const busy = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 const input = ref<HTMLInputElement | null>(null);
 
 async function onChange(event: Event) {
@@ -30,7 +31,7 @@ async function onChange(event: Event) {
       if ((await props.onUploaded?.(image)) === false) break;
     }
   } catch (e) {
-    error.value = errorMessage(e);
+    error.value = () => errorMessage(e);
   } finally {
     busy.value = false;
     if (input.value) input.value.value = "";
@@ -41,7 +42,7 @@ async function onChange(event: Event) {
 <template>
   <div class="uploader">
     <label class="btn ghost small" :class="{ disabled: disabled || busy }">
-      {{ busy ? "上传中…" : label }}
+      {{ busy ? translate("上传中…") : label }}
       <input
         ref="input"
         type="file"
@@ -52,7 +53,7 @@ async function onChange(event: Event) {
         @change="onChange"
       />
     </label>
-    <p v-if="error" class="field-error" role="alert">{{ error }}</p>
+    <p v-if="error" class="field-error" role="alert">{{ error?.() }}</p>
   </div>
 </template>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 // 新建 / 编辑衣物。只提交真正改动的字段；标签、图片是单独的接口，按返回的最新 version 依次调用。
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
@@ -99,7 +100,7 @@ async function load() {
     const it = await api.item(props.id!);
     if (id !== requestId) return; // 已切换到其他衣物或离开页面
     adopt(it);
-    document.title = `编辑 ${it.name} · Wardrobe`;
+    document.title = translate("编辑 {0} · Wardrobe", it.name);
   } catch (e) {
     if (id === requestId) error.value = errorMessage(e);
   } finally {
@@ -142,7 +143,7 @@ const dirty = computed(() =>
 
 let saved = false;
 onBeforeRouteLeave(() => {
-  if (dirty.value && !saved && !window.confirm("有尚未保存的修改，确定离开吗？")) return false;
+  if (dirty.value && !saved && !window.confirm(translate("有尚未保存的修改，确定离开吗？"))) return false;
 });
 
 function selectProduct(p: Product) {
@@ -178,7 +179,7 @@ async function save() {
   conflict.value = false;
   const n = form.wear_count;
   if (n === "" || !Number.isInteger(n) || n < 0) {
-    errors.value = { wear_count: "请填写 0 或以上的整数" };
+    errors.value = { wear_count: translate("请填写 0 或以上的整数") };
     return;
   }
   saving.value = true;
@@ -192,12 +193,12 @@ async function save() {
       } else {
         const body: Record<string, unknown> = { ...fieldPayload(), tags: tags.value };
         if (productMode.value === "existing") {
-          if (!product.value) throw new Error("请选择商品，或改为新建商品");
+          if (!product.value) throw new Error(translate("请选择商品，或改为新建商品"));
           body.product_id = product.value.id;
         } else {
           const p: Record<string, unknown> = {};
           for (const [k, v] of Object.entries(newProduct)) if (v.trim()) p[k] = v.trim();
-          if (!p.name_ja && !p.name_zh && !p.name_en) throw new Error("新建商品至少需要一个名称");
+          if (!p.name_ja && !p.name_zh && !p.name_en) throw new Error(translate("新建商品至少需要一个名称"));
           body.product = p;
         }
         current = await api.createItem(body);
@@ -226,11 +227,11 @@ async function save() {
     }
     adopt(current);
     saved = true;
-    notify(isNew.value ? "已添加衣物" : "已保存");
+    notify(isNew.value ? translate("已添加衣物") : translate("已保存"));
     await router.push({ name: "item", params: { id: current.id } });
   } catch (e) {
     error.value = created.value
-      ? `衣物已创建（#${created.value.id}），但还有 ${stagedImages.value.length} 张照片未关联：${errorMessage(e)}。再次保存只会继续关联剩余照片，不会重复创建。`
+      ? translate("衣物已创建（#{0}），但还有 {1} 张照片未关联：{2}。再次保存只会继续关联剩余照片，不会重复创建。", created.value.id, stagedImages.value.length, errorMessage(e))
       : errorMessage(e);
     errors.value = fieldErrors(e);
     conflict.value = isConflict(e) && !created.value;
@@ -256,7 +257,7 @@ async function addImage(img: ImageInfo): Promise<boolean> {
     pendingImages.value = pendingImages.value.filter((x) => x.id !== img.id);
     return true;
   } catch (e) {
-    error.value = `${pendingImages.value.length} 张照片尚未关联：${errorMessage(e)}`;
+    error.value = translate("{0} 张照片尚未关联：{1}", pendingImages.value.length, errorMessage(e));
     conflict.value = isConflict(e);
     return false;
   }
@@ -289,7 +290,7 @@ const images = computed(() => {
 const removable = (img: ImageInfo) => !isNew.value || stagedImages.value.some((x) => x.id === img.id);
 const createdProductName = computed(() => {
   const p = created.value?.product;
-  return p ? p.name_ja || p.name_zh || p.name_en || `商品 ${p.id}` : "";
+  return p ? p.name_ja || p.name_zh || p.name_en || translate("商品 {0}", p.id) : "";
 });
 const err = (k: string) => errors.value[k];
 
@@ -303,67 +304,66 @@ function cancel() {
 <template>
   <div class="page narrow">
     <div class="page-head">
-      <h1>{{ isNew ? "添加衣物" : `编辑：${item?.name ?? ""}` }}</h1>
+      <h1>{{ isNew ? translate("添加衣物") : translate("编辑：{0}", item?.name ?? "") }}</h1>
       <RouterLink v-if="!isNew && item" :to="{ name: 'product', params: { id: item.product.id } }" class="link-btn">
-        编辑商品资料（名称、颜色、尺码、材质）→
+        {{ translate("编辑商品资料（名称、颜色、尺码、材质）→") }}
       </RouterLink>
     </div>
 
-    <p v-if="loading" class="muted">加载中…</p>
+    <p v-if="loading" class="muted">{{ translate("加载中…") }}</p>
     <template v-else-if="isNew || item">
       <p v-if="error" class="error-banner" role="alert">
         {{ error }}
-        <button v-if="conflict" type="button" class="link-btn" @click="load">载入最新版本（放弃未保存修改）</button>
+        <button v-if="conflict" type="button" class="link-btn" @click="load">{{ translate("载入最新版本（放弃未保存修改）") }}</button>
       </p>
       <p v-if="locked && created" class="locked-note" role="status" data-testid="partial-created">
-        衣物 #{{ created.id }} 已创建：商品、衣物信息和标签都已保存，这里不能再修改。现在只需完成剩余照片的关联；
-        其他修改请在完成后到衣物编辑页进行。
+        {{ translate("衣物 #") }}{{ created.id }} {{ translate("已创建：商品、衣物信息和标签都已保存，这里不能再修改。现在只需完成剩余照片的关联； 其他修改请在完成后到衣物编辑页进行。") }}
       </p>
 
       <form novalidate @submit.prevent="save">
         <section class="panel">
-          <h2>商品</h2>
+          <h2>{{ translate("商品") }}</h2>
           <template v-if="isNew && locked && created">
             <p class="chosen">
-              已保存：<strong>{{ createdProductName }}</strong>
-              <span class="muted"> · {{ created.product.brand?.name ?? "无品牌" }}</span>
+              {{ translate("已保存：") }}<strong>{{ createdProductName }}</strong>
+              <span class="muted"> · {{ created.product.brand?.name ?? translate("无品牌") }}</span>
             </p>
           </template>
           <template v-else-if="isNew">
-            <div class="tabs" role="tablist" aria-label="商品来源">
-              <button type="button" role="tab" :aria-selected="productMode === 'existing'" @click="productMode = 'existing'">选择已有商品</button>
-              <button type="button" role="tab" :aria-selected="productMode === 'new'" @click="productMode = 'new'">新建商品</button>
+            <div class="tabs" role="tablist" :aria-label='translate("商品来源")'>
+              <button type="button" role="tab" :aria-selected="productMode === 'existing'" @click="productMode = 'existing'">{{ translate("选择已有商品") }}</button>
+              <button type="button" role="tab" :aria-selected="productMode === 'new'" @click="productMode = 'new'">{{ translate("新建商品") }}</button>
             </div>
             <template v-if="productMode === 'existing'">
-              <p v-if="product" class="chosen">已选择：<strong>{{ product.name_ja || product.name_zh || product.name_en }}</strong></p>
+              <p v-if="product" class="chosen">{{ translate("已选择：") }}<strong>{{ product.name_ja || product.name_zh || product.name_en }}</strong></p>
               <ProductPicker :selected-id="product?.id" @select="selectProduct" />
             </template>
             <div v-else class="form-grid">
               <label class="field">
-                <span>品牌</span>
+                <span>{{ translate("品牌") }}</span>
                 <select v-model="newProduct.brand">
-                  <option value="">无品牌</option>
+                  <option value="">{{ translate("无品牌") }}</option>
                   <option v-for="b in dict.brands" :key="b.id" :value="b.slug">{{ b.name }}</option>
                 </select>
               </label>
               <label class="field">
-                <span>分类</span>
+                <span>{{ translate("分类") }}</span>
                 <select v-model="newProduct.category">
-                  <option value="">未分类</option>
+                  <option value="">{{ translate("未分类") }}</option>
                   <option v-for="c in categoryOptions()" :key="c.id" :value="c.slug">{{ c.label }}</option>
                 </select>
               </label>
-              <label class="field"><span>日文名</span><input v-model="newProduct.name_ja" /></label>
-              <label class="field"><span>中文名</span><input v-model="newProduct.name_zh" /></label>
-              <label class="field"><span>英文名</span><input v-model="newProduct.name_en" /></label>
-              <p class="hint field wide">只填写名称即可；颜色、尺码、编号、材质可在保存后到「商品资料」页补充。</p>
+              <label class="field"><span>{{ translate("日文名") }}</span><input v-model="newProduct.name_ja" /></label>
+              <label class="field"><span>{{ translate("中文名") }}</span><input v-model="newProduct.name_zh" /></label>
+              <label class="field"><span>{{ translate("英文名") }}</span><input v-model="newProduct.name_en" /></label>
+              <p class="hint field wide">{{ translate("只填写名称即可；颜色、尺码、编号、材质可在保存后到「商品资料」页补充。") }}</p>
             </div>
           </template>
           <template v-else-if="product">
             <p class="chosen">
               <strong>{{ product.name_ja || product.name_zh || product.name_en }}</strong>
-              <span class="muted"> · {{ product.brand?.name ?? "无品牌" }}</span>
-              <button type="button" class="link-btn" @click="pickingProduct = !pickingProduct">{{ pickingProduct ? "取消更换" : "更换商品" }}</button>
+              <span class="muted"> · {{ product.brand?.name ?? translate("无品牌") }}</span>
+              <button type="button" class="link-btn" @click="pickingProduct = !pickingProduct">{{ pickingProduct ? translate("取消更换") : translate("更换商品") }}</button>
             </p>
             <p v-if="err('product_id')" class="field-error">{{ err("product_id") }}</p>
             <ProductPicker v-if="pickingProduct" :selected-id="product.id" @select="selectProduct" />
@@ -371,133 +371,133 @@ function cancel() {
         </section>
 
         <section class="panel">
-          <h2>这件衣物</h2>
-          <p class="hint muted">颜色和尺码留空时，按「购买明细 → 商品默认」自动取值；只有与购买记录不同时才需要填写。</p>
+          <h2>{{ translate("这件衣物") }}</h2>
+          <p class="hint muted">{{ translate("颜色和尺码留空时，按「购买明细 → 商品默认」自动取值；只有与购买记录不同时才需要填写。") }}</p>
           <div class="form-grid">
             <label class="field">
-              <span>分类</span>
+              <span>{{ translate("分类") }}</span>
               <select v-model="form.category_id" :disabled="locked" :aria-invalid="!!err('category_id')">
-                <option :value="null">跟随商品分类</option>
+                <option :value="null">{{ translate("跟随商品分类") }}</option>
                 <option v-for="c in categoryOptions()" :key="c.id" :value="c.id">{{ c.label }}</option>
               </select>
             </label>
             <label class="field">
-              <span>颜色名称</span>
-              <input v-model="form.color_name" :disabled="locked" placeholder="例如 NAVY" />
+              <span>{{ translate("颜色名称") }}</span>
+              <input v-model="form.color_name" :disabled="locked" :placeholder='translate("例如 NAVY")' />
             </label>
             <label class="field">
-              <span>颜色编号</span>
-              <input v-model="form.color_code" :disabled="locked" placeholder="例如 69" />
+              <span>{{ translate("颜色编号") }}</span>
+              <input v-model="form.color_code" :disabled="locked" :placeholder='translate("例如 69")' />
             </label>
             <label class="field">
-              <span>颜色值</span>
+              <span>{{ translate("颜色值") }}</span>
               <span class="color-row">
                 <input v-model="form.color_hex" :disabled="locked" placeholder="#1F2A44" :aria-invalid="!!err('color_hex')" />
-                <input type="color" :disabled="locked" :value="(form.color_hex as string) || '#ffffff'" aria-label="选择颜色" @input="form.color_hex = ($event.target as HTMLInputElement).value.toUpperCase()" />
+                <input type="color" :disabled="locked" :value="(form.color_hex as string) || '#ffffff'" :aria-label='translate("选择颜色")' @input="form.color_hex = ($event.target as HTMLInputElement).value.toUpperCase()" />
               </span>
               <span v-if="err('color_hex')" class="field-error">{{ err("color_hex") }}</span>
             </label>
             <label class="field">
-              <span>尺码</span>
-              <input v-model="form.size_label" :disabled="locked" placeholder="例如 L" />
+              <span>{{ translate("尺码") }}</span>
+              <input v-model="form.size_label" :disabled="locked" :placeholder='translate("例如 L")' />
             </label>
             <label class="field">
-              <span>尺码体系</span>
+              <span>{{ translate("尺码体系") }}</span>
               <select v-model="form.size_system" :disabled="locked">
                 <option value="">—</option>
                 <option v-for="(t, k) in SIZE_SYSTEM_LABELS" :key="k" :value="k">{{ t }}</option>
               </select>
             </label>
             <label class="field">
-              <span>状况</span>
+              <span>{{ translate("状况") }}</span>
               <select v-model="form.condition" :disabled="locked">
-                <option value="">未记录</option>
+                <option value="">{{ translate("未记录") }}</option>
                 <option v-for="(t, k) in CONDITION_LABELS" :key="k" :value="k">{{ t }}</option>
               </select>
             </label>
             <label class="field">
-              <span>取得日期</span>
+              <span>{{ translate("取得日期") }}</span>
               <input v-model="form.acquired_on" type="date" :disabled="locked" :aria-invalid="!!err('acquired_on')" />
             </label>
             <label class="field">
-              <span>收纳位置</span>
-              <input v-model="form.location" :disabled="locked" placeholder="例如 卧室衣柜" />
+              <span>{{ translate("收纳位置") }}</span>
+              <input v-model="form.location" :disabled="locked" :placeholder='translate("例如 卧室衣柜")' />
             </label>
             <label class="field">
-              <span>状态</span>
+              <span>{{ translate("状态") }}</span>
               <select v-model="form.status" :disabled="locked || (original.status === 'returned' && !isNew)" :aria-invalid="!!err('status')">
                 <option v-for="s in statusOptions" :key="s" :value="s">{{ label(STATUS_LABELS, s) }}</option>
               </select>
-              <span v-if="original.status === 'returned' && !isNew" class="hint">已退货；如需改回，请在详情页操作</span>
+              <span v-if="original.status === 'returned' && !isNew" class="hint">{{ translate("已退货；如需改回，请在详情页操作") }}</span>
             </label>
             <label v-if="form.status !== 'owned' && form.status !== 'wishlist'" class="field">
-              <span>离开日期</span>
+              <span>{{ translate("离开日期") }}</span>
               <input v-model="form.retired_on" type="date" :disabled="locked" :aria-invalid="!!err('retired_on')" />
               <span v-if="err('retired_on')" class="field-error">{{ err("retired_on") }}</span>
             </label>
             <template v-if="!isNew">
               <label class="field">
-                <span>穿着次数</span>
+                <span>{{ translate("穿着次数") }}</span>
                 <input v-model="form.wear_count" type="number" min="0" step="1" :aria-invalid="!!err('wear_count')" />
                 <span v-if="err('wear_count')" class="field-error">{{ err("wear_count") }}</span>
               </label>
               <label class="field">
-                <span>最近穿着</span>
+                <span>{{ translate("最近穿着") }}</span>
                 <input v-model="form.last_worn_on" type="date" :aria-invalid="!!err('last_worn_on')" />
                 <span v-if="err('last_worn_on')" class="field-error">{{ err("last_worn_on") }}</span>
               </label>
             </template>
             <label class="field check">
               <input v-model="form.favorite" type="checkbox" :disabled="locked" />
-              <span>收藏</span>
+              <span>{{ translate("收藏") }}</span>
             </label>
             <label class="field wide">
-              <span>修改记录</span>
-              <input v-model="form.alterations" :disabled="locked" placeholder="例如 裤长改短 3cm" />
+              <span>{{ translate("修改记录") }}</span>
+              <input v-model="form.alterations" :disabled="locked" :placeholder='translate("例如 裤长改短 3cm")' />
             </label>
             <label class="field wide">
-              <span>备注</span>
+              <span>{{ translate("备注") }}</span>
               <textarea v-model="form.notes" :disabled="locked" />
             </label>
           </div>
         </section>
 
         <section class="panel">
-          <h2>标签</h2>
+          <h2>{{ translate("标签") }}</h2>
           <template v-if="locked">
             <ul v-if="tags.length" class="locked-tags" data-testid="locked-tags">
               <li v-for="t in tags" :key="t" class="chip">#{{ t }}</li>
             </ul>
-            <p v-else class="muted">没有标签</p>
+            <p v-else class="muted">{{ translate("没有标签") }}</p>
           </template>
           <TagInput v-else v-model="tags" />
         </section>
 
         <section class="panel">
           <div class="panel-head">
-            <h2>衣物照片</h2>
-            <ImageUploader label="上传照片" @uploaded="addImage" />
+            <h2>{{ translate("衣物照片") }}</h2>
+            <ImageUploader :label='translate("上传照片")' @uploaded="addImage" />
           </div>
           <p v-if="pendingImages.length" class="pending">
-            {{ pendingImages.length }} 张照片已上传但尚未关联。
-            <button type="button" class="btn ghost small" @click="retryImages">重试关联</button>
+            {{ pendingImages.length }} {{ translate("张照片已上传但尚未关联。") }}
+            <button type="button" class="btn ghost small" @click="retryImages">{{ translate("重试关联") }}</button>
           </p>
-          <p v-if="!images.length" class="muted">还没有这件衣物自己的照片；列表会使用商品图。</p>
+          <p v-if="!images.length" class="muted">{{ translate("还没有这件衣物自己的照片；列表会使用商品图。") }}</p>
           <ul v-else class="thumbs">
             <li v-for="(img, i) in images" :key="img.id">
-              <img :src="img.thumb_url" :alt="`照片 ${i + 1}`" />
-              <span v-if="img.role === 'main' || (isNew && i === 0 && !created?.images.length)" class="badge dark">主图</span>
-              <button v-if="removable(img)" type="button" class="btn danger small" @click="removeImage(img)">移除</button>
+              <img :src="img.thumb_url" :alt="translate('照片 {0}', i + 1)" />
+              <span v-if="img.role === 'main' || (isNew && i === 0 && !created?.images.length)" class="badge dark">{{ translate("主图") }}</span>
+              <button v-if="removable(img)" type="button" class="btn danger small" @click="removeImage(img)">{{ translate("移除") }}</button>
             </li>
           </ul>
         </section>
 
         <div class="form-actions">
           <button type="submit" class="btn" :disabled="saving || (!isNew && !dirty)">
-            {{ saving ? "保存中…" : created ? "继续关联照片" : isNew ? "添加衣物" : "保存修改" }}
+            {{ saving ? translate("保存中…") : created ? translate("继续关联照片") : isNew ? translate("添加衣物") : translate("保存修改") }}
           </button>
-          <RouterLink v-if="created" :to="{ name: 'item', params: { id: created.id } }" class="btn ghost">查看已创建的衣物</RouterLink>
-          <button type="button" class="btn ghost" @click="cancel">取消</button>
+          <RouterLink v-if="created" :to="{ name: 'item', params: { id: created.id } }" class="btn ghost">{{ translate("查看已创建的衣物") }}</RouterLink>
+          <button type="button" class="btn ghost" @click="cancel">{{ translate("取消") }}</button>
         </div>
       </form>
     </template>

@@ -1,3 +1,5 @@
+import { LanguagePicker } from "./LanguagePicker";
+import { t as translate, useLanguage } from "../i18n";
 // HTTP 模式的入口：先恢复本应用会话，401 时显示本机配对；成功后才读取数据。
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthClient, type PairResult } from '../api/auth';
@@ -17,6 +19,7 @@ type GateState =
 type LaunchFailure = (LaunchOutcome & { kind: 'launch_failed' })['reason'];
 
 export function AuthGate({ launch }: { launch?: LaunchConnector }) {
+  useLanguage();
   const auth = useMemo(() => new AuthClient(), []);
   const [state, setState] = useState<GateState>({ s: 'checking' });
   const stateRef = useRef(state);
@@ -81,33 +84,34 @@ export function AuthGate({ launch }: { launch?: LaunchConnector }) {
           <span className="brand-name">
             Usage<span>.</span>
           </span>
-          <span className="eyebrow">AI 使用记录 · 本机优先</span>
+          <LanguagePicker />
+          <span className="eyebrow">{translate("AI 使用记录 · 本机优先")}</span>
         </header>
         {state.s === 'checking' && (
           <div className="placeholder" aria-busy="true">
-            {launch?.pending ? '正在自动连接本机服务…' : '正在连接本机服务…'}
+            {launch?.pending ? translate("正在自动连接本机服务…") : translate("正在连接本机服务…")}
           </div>
         )}
         {state.s === 'unreachable' && (
           <div className="gate-card" role="alert">
-            <h1>本地服务不可达</h1>
-            <p>页面连不上本机的数据服务。请重新点击启动图标，或确认服务仍在运行后重试。这不代表进程一定已经停止。</p>
+            <h1>{translate("本地服务不可达")}</h1>
+            <p>{translate("页面连不上本机的数据服务。请重新点击启动图标，或确认服务仍在运行后重试。这不代表进程一定已经停止。")}</p>
             <p className="small muted">
-              开发时：在 backend/ 目录用 <code>python3 -m usage_dashboard serve --dev-origin http://127.0.0.1:5174</code> 启动。
+              {translate("开发时：在 backend/ 目录用")} <code>python3 -m usage_dashboard serve --dev-origin http://127.0.0.1:5174</code> {translate("启动。")}
             </p>
             <button type="button" className="btn-primary" onClick={() => void check()}>
-              重试
+              {translate("重试")}
             </button>
           </div>
         )}
         {state.s === 'error' && (
           <div className="gate-card" role="alert">
-            <h1>无法确认本机会话</h1>
+            <h1>{translate("无法确认本机会话")}</h1>
             <p>
-              服务返回了意外的结果：<code>{state.detail}</code>
+              {translate("服务返回了意外的结果：")}<code>{state.detail}</code>
             </p>
             <button type="button" className="btn-primary" onClick={() => void check()}>
-              重试
+              {translate("重试")}
             </button>
           </div>
         )}
@@ -119,42 +123,49 @@ export function AuthGate({ launch }: { launch?: LaunchConnector }) {
 }
 
 const LAUNCH_FAILED: Record<LaunchFailure, string> = {
-  invalid_code: '启动时带来的一次性连接码已经用过或已过期（5 分钟有效）。',
-  malformed: '启动链接不完整或无效。',
-  forbidden: '服务拒绝了这个页面的来源。',
-  rate_limited: '连接尝试次数过多，请稍后再试。',
-  unreachable: '本地服务不可达。',
-  error: '自动连接没有成功。',
+  get invalid_code() { return translate("启动时带来的一次性连接码已经用过或已过期（5 分钟有效）。"); },
+  get malformed() { return translate("启动链接不完整或无效。"); },
+  get forbidden() { return translate("服务拒绝了这个页面的来源。"); },
+  get rate_limited() { return translate("连接尝试次数过多，请稍后再试。"); },
+  get unreachable() { return translate("本地服务不可达。"); },
+  get error() { return translate("自动连接没有成功。"); },
 };
 
 /** 一键启动的自动连接失败：简短说明，不显示码或原始链接。 */
 function LaunchFailedNote({ reason }: { reason: LaunchFailure }) {
+  useLanguage();
   return (
     <div className="gate-card" role="alert">
-      <h1>自动连接没有成功</h1>
-      <p>{LAUNCH_FAILED[reason]}请关闭这个页面，重新点击启动图标；仍不行时退出服务后再启动。</p>
+      <h1>{translate("自动连接没有成功")}</h1>
+      <p>{LAUNCH_FAILED[reason]}{translate("请关闭这个页面，重新点击启动图标；仍不行时退出服务后再启动。")}</p>
     </div>
   );
 }
 
 const PAIR_ERROR: Record<string, string> = {
-  invalid_code: '配对码不正确、已经用过或已过期（5 分钟有效）。过期时请重启后端取得新码。',
-  malformed: '配对码格式不对。请完整复制终端里显示的那一串字符。',
-  forbidden: '服务拒绝了这个页面的来源。开发时请确认后端用 --dev-origin http://127.0.0.1:5174 启动。',
-  unreachable: '本地服务不可达，请确认后端仍在运行。',
-  error: '配对没有成功，请重试。',
+  get invalid_code() { return translate("配对码不正确、已经用过或已过期（5 分钟有效）。过期时请重启后端取得新码。"); },
+  get malformed() { return translate("配对码格式不对。请完整复制终端里显示的那一串字符。"); },
+  get forbidden() { return translate("服务拒绝了这个页面的来源。开发时请确认后端用 --dev-origin http://127.0.0.1:5174 启动。"); },
+  get unreachable() { return translate("本地服务不可达，请确认后端仍在运行。"); },
+  get error() { return translate("配对没有成功，请重试。"); },
 };
 
 function PairingPanel({ auth, expired, manualOnly, onPaired }: { auth: AuthClient; expired: boolean; manualOnly: boolean; onPaired: () => void }) {
+  useLanguage();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Extract<PairResult, { ok: false }> | null>(null);
+  const error = failure?.reason === 'rate_limited'
+    ? failure.retryAfterSeconds
+      ? translate("尝试次数过多，请约 {0} 分钟后再试。", Math.ceil(failure.retryAfterSeconds / 60))
+      : translate("尝试次数过多，请稍后再试。")
+    : failure ? PAIR_ERROR[failure.reason] ?? PAIR_ERROR.error! : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    setError(null);
+    setFailure(null);
     let r: PairResult;
     try {
       r = await auth.pair(code);
@@ -167,31 +178,23 @@ function PairingPanel({ auth, expired, manualOnly, onPaired }: { auth: AuthClien
       onPaired();
       return;
     }
-    if (r.reason === 'rate_limited') {
-      setError(
-        r.retryAfterSeconds
-          ? `尝试次数过多，请约 ${Math.ceil(r.retryAfterSeconds / 60)} 分钟后再试。`
-          : '尝试次数过多，请稍后再试。',
-      );
-    } else {
-      setError(PAIR_ERROR[r.reason] ?? PAIR_ERROR.error!);
-    }
+    setFailure(r);
   };
 
   const form = (
     <form className="gate-card" onSubmit={submit} autoComplete="off">
       {manualOnly ? (
-        <h2 className="gate-sub">手动输入配对码</h2>
+        <h2 className="gate-sub">{translate("手动输入配对码")}</h2>
       ) : (
-        <h1>{expired ? '本机会话已失效，请重新连接' : '连接本机服务'}</h1>
+        <h1>{expired ? translate("本机会话已失效，请重新连接") : translate("连接本机服务")}</h1>
       )}
       <p>
-        {manualOnly ? '' : '点击启动图标会自动打开并连接，不需要输入。'}
-        手动启动服务时，终端里会显示一次性配对码（5 分钟有效，只能用一次），粘贴到下面即可；这台浏览器会记住本应用的会话，刷新页面不需要重新配对。
+        {manualOnly ? '' : translate("点击启动图标会自动打开并连接，不需要输入。")}
+        {translate("手动启动服务时，终端里会显示一次性配对码（5 分钟有效，只能用一次），粘贴到下面即可；这台浏览器会记住本应用的会话，刷新页面不需要重新配对。")}
       </p>
-      <p className="small muted">这是本应用的配对码，不是 OpenAI / Claude 的账号密码；页面不会要求供应商凭据。</p>
+      <p className="small muted">{translate("这是本应用的配对码，不是 OpenAI / Claude 的账号密码；页面不会要求供应商凭据。")}</p>
       <label htmlFor="pairing-code" className="eyebrow">
-        配对码
+        {translate("配对码")}
       </label>
       <input
         id="pairing-code"
@@ -214,7 +217,7 @@ function PairingPanel({ auth, expired, manualOnly, onPaired }: { auth: AuthClien
       )}
       <div>
         <button type="submit" className="btn-primary" disabled={busy || code.trim() === ''}>
-          {busy ? '正在配对…' : '配对'}
+          {busy ? translate("正在配对…") : translate("配对")}
         </button>
       </div>
     </form>
@@ -222,7 +225,7 @@ function PairingPanel({ auth, expired, manualOnly, onPaired }: { auth: AuthClien
   // 自动连接失败时，手动面板只作故障备用，默认收起
   return manualOnly ? (
     <details className="gate-fallback">
-      <summary>备用：手动输入配对码</summary>
+      <summary>{translate("备用：手动输入配对码")}</summary>
       {form}
     </details>
   ) : (

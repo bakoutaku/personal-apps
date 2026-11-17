@@ -1,3 +1,4 @@
+import { t as translate, useLanguage } from "../i18n";
 import { PRODUCTS_BY_PROVIDER, type Product, type Provider, type Source } from '../api/types';
 import { productName } from '../domain/quota';
 import { productStatus } from '../domain/sources';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ProductFilter({ provider, selected, sources, onChange }: Props) {
+  useLanguage();
   const all = PRODUCTS_BY_PROVIDER[provider];
   const toggle = (p: Product) => {
     const cur = new Set(selected ?? []);
@@ -21,12 +23,12 @@ export function ProductFilter({ provider, selected, sources, onChange }: Props) 
   };
 
   return (
-    <div className="filters" role="group" aria-label="产品筛选">
+    <div className="filters" role="group" aria-label={translate("产品筛选")}>
       <span className="eyebrow" style={{ marginRight: 6 }}>
-        产品
+        {translate("产品")}
       </span>
       <button type="button" className="chip" aria-pressed={selected === null} onClick={() => onChange(null)}>
-        全部
+        {translate("全部")}
       </button>
       {all.map((p) => {
         const { status, localOnly } = productStatus(sources, p);
@@ -34,15 +36,15 @@ export function ProductFilter({ provider, selected, sources, onChange }: Props) 
         const note =
           status === 'available'
             ? localOnly
-              ? '仅本机'
+              ? translate("仅本机")
               : null
             : status === 'error'
-              ? '同步失败'
+              ? translate("同步失败")
               : status === 'disabled'
-                ? '已停用'
+                ? translate("已停用")
                 : status === 'not_configured'
-                  ? '未配置'
-                  : '无来源';
+                  ? translate("未配置")
+                  : translate("无来源");
         return (
           <button key={p} type="button" className="chip" aria-pressed={selected?.includes(p) ?? false} onClick={() => toggle(p)}>
             <StatusDot kind={dot} />
@@ -51,7 +53,7 @@ export function ProductFilter({ provider, selected, sources, onChange }: Props) 
           </button>
         );
       })}
-      <span className="small subtle">产品筛选只作用于用量、会话和明细；额度按池显示。</span>
+      <span className="small subtle">{translate("产品筛选只作用于用量、会话和明细；额度按池显示。")}</span>
     </div>
   );
 }

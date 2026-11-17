@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 import { createContext, useContext } from 'react';
 
 /** 打开标签编辑器的请求。 */
@@ -16,7 +17,7 @@ export interface LabelEditing {
 
 export const LabelEditingContext = createContext<LabelEditing>({
   writable: false,
-  readOnlyReason: '模拟数据只读，接入本机服务后可编辑标签',
+  get readOnlyReason() { return translate("模拟数据只读，接入本机服务后可编辑标签"); },
   open: () => {},
 });
 

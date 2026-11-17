@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { onBeforeUnmount, ref, watch } from "vue";
 import { api } from "../api/client";
 import type { Product } from "../api/types";
@@ -9,7 +10,7 @@ const emit = defineEmits<{ select: [product: Product] }>();
 const q = ref("");
 const results = ref<Product[]>([]);
 const loading = ref(false);
-const error = ref<string | null>(null);
+const error = ref<(() => string) | null>(null);
 let timer: ReturnType<typeof setTimeout> | undefined;
 let requestId = 0;
 
@@ -21,7 +22,7 @@ async function search() {
     const page = await api.products({ q: q.value.trim() || undefined, limit: 20 });
     if (id === requestId) results.value = page.items;
   } catch (e) {
-    if (id === requestId) error.value = errorMessage(e);
+    if (id === requestId) error.value = () => errorMessage(e);
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -38,14 +39,14 @@ onBeforeUnmount(() => {
 });
 
 function name(p: Product) {
-  return p.name_ja || p.name_zh || p.name_en || `商品 ${p.id}`;
+  return p.name_ja || p.name_zh || p.name_en || translate("商品 {0}", p.id);
 }
 </script>
 
 <template>
   <div class="picker">
-    <input v-model="q" class="input" type="search" placeholder="按商品名称搜索…" aria-label="搜索商品" />
-    <p v-if="error" class="field-error" role="alert">{{ error }}</p>
+    <input v-model="q" class="input" type="search" :placeholder='translate("按商品名称搜索…")' :aria-label='translate("搜索商品")' />
+    <p v-if="error" class="field-error" role="alert">{{ error?.() }}</p>
     <ul class="results" :aria-busy="loading">
       <li v-for="p in results" :key="p.id">
         <button type="button" class="result" :aria-pressed="p.id === props.selectedId" @click="emit('select', p)">
@@ -53,11 +54,11 @@ function name(p: Product) {
           <span v-else class="ph" />
           <span class="text">
             <strong>{{ name(p) }}</strong>
-            <span class="muted">{{ p.brand?.name ?? "无品牌" }} · {{ p.category?.path.join(" / ") ?? "未分类" }}</span>
+            <span class="muted">{{ p.brand?.name ?? translate("无品牌") }} · {{ p.category?.path.join(" / ") ?? translate("未分类") }}</span>
           </span>
         </button>
       </li>
-      <li v-if="!loading && !results.length" class="muted none">没有找到商品</li>
+      <li v-if="!loading && !results.length" class="muted none">{{ translate("没有找到商品") }}</li>
     </ul>
   </div>
 </template>

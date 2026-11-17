@@ -1,23 +1,24 @@
 <script setup lang="ts">
+import { changeLanguage, language, languages, t as translate } from "./i18n";
 import { RouterLink, RouterView } from "vue-router";
 import ToastHost from "./components/ToastHost.vue";
 
 const nav = [
-  { to: "/", label: "我的衣橱", section: "wardrobe" },
-  { to: "/overview", label: "衣橱总览", section: "overview" },
-  { to: "/outfits", label: "穿搭组合", section: "outfits" },
-  { to: "/purchases", label: "购买记录", section: "purchases" },
-  { to: "/imports", label: "导入中心", section: "imports" },
-  { to: "/settings", label: "设置", section: "settings" },
+  { to: "/", get label() { return translate("我的衣橱"); }, section: "wardrobe" },
+  { to: "/overview", get label() { return translate("衣橱总览"); }, section: "overview" },
+  { to: "/outfits", get label() { return translate("穿搭组合"); }, section: "outfits" },
+  { to: "/purchases", get label() { return translate("购买记录"); }, section: "purchases" },
+  { to: "/imports", get label() { return translate("导入中心"); }, section: "imports" },
+  { to: "/settings", get label() { return translate("设置"); }, section: "settings" },
 ];
 </script>
 
 <template>
-  <a class="skip-link" href="#main">跳到主要内容</a>
+  <a class="skip-link" href="#main">{{ translate("跳到主要内容") }}</a>
   <header class="site-header">
     <div class="inner">
-      <RouterLink to="/" class="wordmark" aria-label="Wardrobe 首页">WARDROBE</RouterLink>
-      <nav aria-label="主导航">
+      <RouterLink to="/" class="wordmark" :aria-label='translate("Wardrobe 首页")'>WARDROBE</RouterLink>
+      <nav :aria-label='translate("主导航")'>
         <RouterLink
           v-for="n in nav"
           :key="n.to"
@@ -28,6 +29,10 @@ const nav = [
           {{ n.label }}
         </RouterLink>
       </nav>
+      <select class="language-picker" :aria-label="translate('界面语言')" :title="translate('界面语言')"
+        :value="language" @change="changeLanguage(($event.target as HTMLSelectElement).value)">
+        <option v-for="(name, code) in languages" :key="code" :lang="code" :value="code">{{ name }}</option>
+      </select>
     </div>
   </header>
   <main id="main">
@@ -79,6 +84,10 @@ const nav = [
   font-size: 18px;
   letter-spacing: 0.32em;
   text-decoration: none;
+}
+.language-picker {
+  flex-shrink: 0;
+  margin-inline-start: auto;
 }
 nav {
   display: flex;

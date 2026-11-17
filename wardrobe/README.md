@@ -2,7 +2,11 @@
 
 简体中文 · [日本語](README.ja.md) · [English](README.en.md)
 
-一个在本机管理衣物、商品、穿搭和购买记录的工具。目前是试用版，主要在 macOS 开发。界面使用中文。技术栈为 Vue、TypeScript、FastAPI 和 SQLite，GPT 与 Claude 参与开发和审查。
+一个在本机管理衣物、商品、穿搭和购买记录的工具。目前是试用版，主要在 macOS 开发。技术栈为 Vue、TypeScript、FastAPI 和 SQLite，GPT 与 Claude 参与开发和审查。
+
+## 切换界面语言
+
+在顶部导航右侧选择简体中文、日本語或 English。默认使用简体中文，同一浏览器会记住选择。衣物名称、备注及其他已有数据保持原文。
 
 ## 界面截图
 

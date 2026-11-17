@@ -1,14 +1,15 @@
+import { t as translate } from "../i18n";
 // 把提议、审计日志、导入差异中的任意值转成一行可读文字。
 import { FIELD_LABELS, label } from "./labels";
 
 export function formatValue(v: unknown): string {
-  if (v === null || v === undefined || v === "") return "（空）";
-  if (typeof v === "boolean") return v ? "是" : "否";
+  if (v === null || v === undefined || v === "") return translate("（空）");
+  if (typeof v === "boolean") return v ? translate("是") : translate("否");
   if (typeof v === "string" || typeof v === "number") return String(v);
-  if (Array.isArray(v)) return v.length ? v.map(formatValue).join("；") : "（无）";
+  if (Array.isArray(v)) return v.length ? v.map(formatValue).join("；") : translate("（无）");
   if (typeof v === "object") {
     const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== null && x !== undefined && x !== "");
-    if (!entries.length) return "（空）";
+    if (!entries.length) return translate("（空）");
     return entries.map(([k, x]) => `${label(FIELD_LABELS, k)}: ${formatValue(x)}`).join("，");
   }
   return String(v);

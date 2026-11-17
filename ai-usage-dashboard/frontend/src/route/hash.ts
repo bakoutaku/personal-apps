@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 // hash 路由：#/gpt[/页面]?products=codex&view=window&pool=<id>&window=<window_id>
 // 首页（用量图）没有页面段；二级页面：quota 额度、details 明细、sources 数据来源、about 关于。
 // 只放筛选和视图；令牌、数据都不进 URL。
@@ -55,7 +56,7 @@ export function parseHash(hash: string, defaults: { provider: Provider; view: Vi
   const seen = new Set<string>();
   for (const k of params.keys()) {
     if (!KNOWN_KEYS.has(k)) dropped.push(k);
-    if (seen.has(k)) dropped.push(`${k}（重复）`);
+    if (seen.has(k)) dropped.push(translate("{0}（重复）", k));
     seen.add(k);
   }
 

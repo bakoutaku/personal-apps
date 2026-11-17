@@ -1,3 +1,5 @@
+import { LanguagePicker } from "./LanguagePicker";
+import { t as translate, useLanguage } from "../i18n";
 // 仅 mock：把 contracts/mocks/states/ 下每份局部状态样本单独画出来。
 // 每份样本只是一份响应，不是整屏场景，所以逐块展示，不拼进主页面。
 import { useEffect, useState } from 'react';
@@ -23,7 +25,17 @@ interface Loaded {
 /** 状态样本的阅读顺序：先额度，再来源，最后用量。 */
 const ORDER = ['WindowsResponse', 'SourcesResponse', 'SeriesResponse'];
 
+const SAMPLE_NOTES: Record<string, string> = {
+  'states/expired-window.json': '已结束的窗口隐藏当前百分比。',
+  'states/unknown-boundaries.json': '边界未知时只显示观测明细。',
+  'states/stale-current-window.json': '窗口尚未结束，但上次观测值已过时。',
+  'states/sync-error.json': '来源同步失败时保留已有记录。',
+  'states/partial-known-total.json': '三个事件中已知用量小计为 3000。',
+  'states/future-range.json': '以模拟时钟为界，将未来时段单独标出。',
+};
+
 export function StatesGallery() {
+  useLanguage();
   const [items, setItems] = useState<Loaded[] | null>(null);
 
   useEffect(() => {
@@ -44,20 +56,21 @@ export function StatesGallery() {
 
   return (
     <section className="section" aria-labelledby="states-h">
+      <LanguagePicker />
       <div className="section-head">
         <div>
-          <div className="eyebrow">仅模拟数据 · 状态样例</div>
-          <h2 id="states-h">局部状态示例</h2>
+          <div className="eyebrow">{translate("仅模拟数据 · 状态样例")}</div>
+          <h2 id="states-h">{translate("局部状态示例")}</h2>
           <p className="section-note">
-            下面每一块只来自 contracts/mocks/states/ 里的一份响应，查询范围和主页面不同，不是整屏场景，也不和主页面数据拼接。
+            {translate("下面每一块只来自 contracts/mocks/states/ 里的一份响应，查询范围和主页面不同，不是整屏场景，也不和主页面数据拼接。")}
             <br />
-            <a href="#/gpt">← 回到主页面</a>
+            <a href="#/gpt">{translate("← 回到主页面")}</a>
           </p>
         </div>
       </div>
       {items === null ? (
         <div className="placeholder" aria-busy="true">
-          正在读取状态样本…
+          {translate("正在读取状态样本…")}
         </div>
       ) : (
         <>
@@ -70,18 +83,19 @@ export function StatesGallery() {
 }
 
 function StatePanel({ item }: { item: Loaded }) {
+  useLanguage();
   const { entry, result } = item;
   return (
-    <article className="chart-box" aria-label={`场景 ${entry.scenario_id}`}>
+    <article className="chart-box" aria-label={translate("场景 {0}", entry.scenario_id)}>
       <div className="chart-head">
         <span className="title">
-          场景 <span className="num">{entry.scenario_id}</span>
+          {translate("场景")} <span className="num">{entry.scenario_id}</span>
         </span>
         <span className="small muted num">{entry.file}</span>
       </div>
-      {entry.note && <p className="small muted" style={{ margin: 0 }}>样本说明：{entry.note}</p>}
+      {entry.note && <p className="small muted" style={{ margin: 0 }}>{translate("样本说明：")}{translate(SAMPLE_NOTES[entry.file] ?? entry.note)}</p>}
       {!result.ok ? (
-        <FetchProblem result={result} what="状态样本" />
+        <FetchProblem result={result} what={translate("状态样本")} />
       ) : (
         <StateBody schema={entry.schema} result={result} />
       )}
@@ -90,6 +104,7 @@ function StatePanel({ item }: { item: Loaded }) {
 }
 
 function StateBody({ schema, result }: { schema: string; result: Fetched<unknown> & { ok: true } }) {
+  useLanguage();
   const data = result.data;
   const clock: Clock = { tz: result.meta.timezone, asOfMs: Date.parse(result.meta.as_of) };
   const staleAfter = result.meta.stale_after_seconds;
@@ -104,13 +119,13 @@ function StateBody({ schema, result }: { schema: string; result: Fetched<unknown
           .map((w) => (
             <div key={w.id}>
               <p className="small muted" style={{ margin: '4px 0' }}>
-                窗口时间轴（样本只提供窗口和最新快照，所以只有一个观测点）
+                {translate("窗口时间轴（样本只提供窗口和最新快照，所以只有一个观测点）")}
               </p>
               <QuotaObsChart window={w} snapshots={[w.latest_snapshot!]} scale={timeScale(Date.parse(w.starts_at!), Date.parse(w.ends_at!))} clock={clock} />
             </div>
           ))}
         {windows.some((w) => !hasFullBounds(w)) && (
-          <div className="placeholder">起止边界未知的窗口不画时间轴、不参与前后翻页；记录仍在明细中显示。</div>
+          <div className="placeholder">{translate("起止边界未知的窗口不画时间轴、不参与前后翻页；记录仍在明细中显示。")}</div>
         )}
       </>
     );
@@ -123,7 +138,7 @@ function StateBody({ schema, result }: { schema: string; result: Fetched<unknown
         <FailureBars sources={sources} providerLabel={label} clock={clock} />
         <SourcesTable sources={result as Fetched<Source[]>} providerLabel={label} clock={clock} />
         <p className="small muted" style={{ margin: 0 }}>
-          历史状态：{sources.map((s) => `${s.history_status}${s.last_record_at ? `（最近记录 ${fmtDateTimeRel(s.last_record_at, clock.asOfMs, clock.tz)}）` : ''}`).join('、')}
+          {translate("历史状态：")}{sources.map((s) => `${s.history_status}${s.last_record_at ? translate("（最近记录 {0}）", fmtDateTimeRel(s.last_record_at, clock.asOfMs, clock.tz)) : ''}`).join('、')}
         </p>
       </>
     );
@@ -134,7 +149,7 @@ function StateBody({ schema, result }: { schema: string; result: Fetched<unknown
       <>
         <div className="chart-head">
           <span className="title">
-            token 用量 <span>每 {series.bucket === 'hour' ? '小时' : '15 分钟'}</span>
+            {translate("token 用量")} <span>{translate("每")} {series.bucket === 'hour' ? translate("小时") : translate("15 分钟")}</span>
           </span>
           <TokenLegend />
         </div>
@@ -142,7 +157,7 @@ function StateBody({ schema, result }: { schema: string; result: Fetched<unknown
       </>
     );
   }
-  return <p className="small muted">未支持的样本类型：{schema}</p>;
+  return <p className="small muted">{translate("未支持的样本类型：")}{schema}</p>;
 }
 
 /**
@@ -150,6 +165,7 @@ function StateBody({ schema, result }: { schema: string; result: Fetched<unknown
  * 百分比标签的避让效果。复现 2026-10-23 用户截图里的重叠。同一份数据分别按全宽和窄宽画。
  */
 function CrowdedQuotaLabels() {
+  useLanguage();
   const tz = 'Asia/Tokyo';
   const day = Date.parse('2026-10-21T15:00:00Z'); // 10/22 00:00 JST
   const h = (n: number) => new Date(day + n * 3_600_000).toISOString();
@@ -195,14 +211,14 @@ function CrowdedQuotaLabels() {
   }));
   const scale = timeScale(day, day + 24 * 3_600_000);
   return (
-    <article className="chart-box" aria-label="合成样例：额度标签拥挤">
+    <article className="chart-box" aria-label={translate("合成样例：额度标签拥挤")}>
       <div className="chart-head">
-        <span className="title">合成样例 · 额度百分比标签避让</span>
-        <span className="small muted">前端自造数据：38/36/0 同一五小时窗口位置，七天 64/6/0，另有 52、100</span>
+        <span className="title">{translate("合成样例 · 额度百分比标签避让")}</span>
+        <span className="small muted">{translate("前端自造数据：38/36/0 同一五小时窗口位置，七天 64/6/0，另有 52、100")}</span>
       </div>
       <CalendarQuotaChart summaries={summaries} windows={windows} snapshots={null} scale={scale} clock={clock} />
       <div style={{ maxWidth: 360 }}>
-        <div className="small muted">同一数据 · 窄宽 360px</div>
+        <div className="small muted">{translate("同一数据 · 窄宽 360px")}</div>
         <CalendarQuotaChart summaries={summaries} windows={windows} snapshots={null} scale={scale} clock={clock} />
       </div>
     </article>

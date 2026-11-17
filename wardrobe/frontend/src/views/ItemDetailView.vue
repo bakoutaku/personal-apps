@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t as translate } from "../i18n";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ApiError, api } from "../api/client";
@@ -27,12 +28,12 @@ import {
 const props = defineProps<{ id: number }>();
 const router = useRouter();
 const item = ref<ItemDetail | null>(null);
-const error = ref<{ status: number; message: string } | null>(null);
+const error = ref<{ status: number; message: () => string } | null>(null);
 const loading = ref(true);
 const showLoading = useDelayedLoading(loading);
 const proposals = ref<Proposal[]>([]);
 const busy = ref(false);
-const actionError = ref<string | null>(null);
+const actionError = ref<(() => string) | null>(null);
 const returning = ref(false);
 const analyzingColor = ref(false);
 const suggestingTags = ref(false);
@@ -84,7 +85,7 @@ async function load() {
   const id = ++requestId;
   loading.value = true;
   error.value = null;
-  if (!item.value) document.title = "衣物详情 · Wardrobe";
+  if (!item.value) document.title = translate("衣物详情 · Wardrobe");
   try {
     const result = await api.item(props.id);
     if (id !== requestId) return;
@@ -94,7 +95,7 @@ async function load() {
   } catch (e) {
     if (id !== requestId) return;
     if (e instanceof ApiError && e.status === 404) item.value = null;
-    error.value = e instanceof ApiError ? { status: e.status, message: e.message } : { status: 0, message: String(e) };
+    error.value = e instanceof ApiError ? { status: e.status, message: () => errorMessage(e) } : { status: 0, message: () => errorMessage(e) };
   } finally {
     if (id === requestId) loading.value = false;
   }
@@ -124,7 +125,7 @@ const color = computed(() => item.value?.resolved.color ?? null);
 // HEX-only 是照片建议的默认接受路径；有颜色事实时必须提供可读文字。
 const colorText = computed(() => {
   const c = color.value;
-  return c?.name || c?.hex || c?.code || COLOR_FAMILIES.find((f) => f.key === c?.family)?.label || c?.family || "未记录";
+  return c?.name || c?.hex || c?.code || COLOR_FAMILIES.find((f) => f.key === c?.family)?.label || c?.family || translate("未记录");
 });
 const size = computed(() => item.value?.resolved.size ?? null);
 const line = computed(() => item.value?.purchase?.line ?? null);
@@ -153,7 +154,7 @@ async function act(
     return true;
   } catch (e) {
     if (gen !== pageGen) return false;
-    actionError.value = errorMessage(e);
+    actionError.value = () => errorMessage(e);
     if (isConflict(e)) await load();
     return false;
   } finally {
@@ -165,8 +166,8 @@ function wear() {
   const it = item.value;
   if (!it) return;
   const before = { wear_count: it.wear_count, last_worn_on: it.last_worn_on };
-  return act((x) => api.wearItem(x.id, { version: x.version, worn_on: today() }), "已记录穿着一次", (after) => ({
-    label: "撤销",
+  return act((x) => api.wearItem(x.id, { version: x.version, worn_on: today() }), translate("已记录穿着一次"), (after) => ({
+    label: translate("撤销"),
     run: () => undoWear(after, before),
   }));
 }
@@ -184,14 +185,14 @@ async function undoWear(after: ItemDetail, before: Pick<ItemDetail, "wear_count"
       if (loading.value || !item.value) void load();
       else if (item.value.version < restored.version) item.value = restored;
     }
-    notify("已撤销这次穿着记录");
+    notify(translate("已撤销这次穿着记录"));
   } catch (e) {
-    notify(isConflict(e) ? "这件衣物之后又被修改过，无法撤销；可在编辑页修改穿着次数" : errorMessage(e), { kind: "error" });
+    notify(isConflict(e) ? translate("这件衣物之后又被修改过，无法撤销；可在编辑页修改穿着次数") : errorMessage(e), { kind: "error" });
     if (isConflict(e) && onTarget()) await load();
   }
 }
 const toggleVerify = () =>
-  act((it) => api.verifyItem(it.id, it.version, it.verification !== "verified"), item.value?.verification === "verified" ? "已取消核实" : "已标记为核实");
+  act((it) => api.verifyItem(it.id, it.version, it.verification !== "verified"), item.value?.verification === "verified" ? translate("已取消核实") : translate("已标记为核实"));
 
 async function submitReturn() {
   const gen = pageGen;
@@ -199,14 +200,14 @@ async function submitReturn() {
   const refund = String(returnForm.value.refund_amount ?? "").trim();
   const ok = await act(
     (it) => api.returnItem(it.id, { version: it.version, returned_on: returnForm.value.returned_on, refund_amount: refund === "" ? null : Number(refund) }),
-    "已记录退货",
+    translate("已记录退货"),
   );
   if (ok && gen === pageGen) returning.value = false;
 }
 
 async function remove() {
   const it = item.value;
-  if (!it || loading.value || error.value || !window.confirm(`删除「${it.name}」？删除后可以立即撤销。`)) return;
+  if (!it || loading.value || error.value || !window.confirm(translate("删除「{0}」？删除后可以立即撤销。", it.name))) return;
   const gen = pageGen;
   busy.value = true;
   actionError.value = null;
@@ -214,13 +215,13 @@ async function remove() {
     await api.deleteItem(it.id, it.version);
     // 删除只把 version 加 1，撤销时用它恢复
     const deletedVersion = it.version + 1;
-    notify(`已删除「${it.name}」`, {
+    notify(translate("已删除「{0}」", it.name), {
       action: {
-        label: "撤销",
+        label: translate("撤销"),
         run: async () => {
           try {
             await api.restoreItem(it.id, deletedVersion);
-            notify("已恢复");
+            notify(translate("已恢复"));
             await router.push({ name: "item", params: { id: it.id } });
           } catch (e) {
             notify(errorMessage(e), { kind: "error" });
@@ -231,7 +232,7 @@ async function remove() {
     // 删除完成时已经切到另一件衣物：保留可撤销的提示，但不把用户从当前页面带走
     if (gen === pageGen) await router.push("/");
   } catch (e) {
-    if (gen === pageGen) actionError.value = errorMessage(e);
+    if (gen === pageGen) actionError.value = () => errorMessage(e);
   } finally {
     if (gen === pageGen) busy.value = false;
   }
@@ -246,10 +247,10 @@ function back() {
 
 <template>
   <div class="detail" :aria-busy="loading">
-    <button type="button" class="link-btn back" @click="back">← 返回</button>
+    <button type="button" class="link-btn back" @click="back">{{ translate("← 返回") }}</button>
 
-    <p class="load-feedback" role="status">{{ showLoading ? (item ? "正在刷新衣物…" : "正在加载衣物…") : "" }}</p>
-    <p v-if="error && item" class="error-banner" role="alert">刷新失败，仍显示上次读取的只读内容：{{ error.message }} <button type="button" class="link-btn" @click="load">重试刷新</button></p>
+    <p class="load-feedback" role="status">{{ showLoading ? (item ? translate("正在刷新衣物…") : translate("正在加载衣物…")) : "" }}</p>
+    <p v-if="error && item" class="error-banner" role="alert">{{ translate("刷新失败，仍显示上次读取的只读内容：") }}{{ error.message() }} <button type="button" class="link-btn" @click="load">{{ translate("重试刷新") }}</button></p>
     <div v-if="loading && !item" class="layout loading-shell" aria-hidden="true">
       <template v-if="showLoading">
         <div class="skeleton" style="aspect-ratio: 3 / 4" />
@@ -258,50 +259,50 @@ function back() {
     </div>
 
     <div v-else-if="error && !item" class="state">
-      <h1>{{ error.status === 404 ? "找不到这件衣物" : "加载失败" }}</h1>
-      <p class="error-banner" role="alert">{{ error.message }}</p>
-      <RouterLink to="/" class="btn ghost">返回我的衣橱</RouterLink>
+      <h1>{{ error.status === 404 ? translate("找不到这件衣物") : translate("加载失败") }}</h1>
+      <p class="error-banner" role="alert">{{ error.message() }}</p>
+      <RouterLink to="/" class="btn ghost">{{ translate("返回我的衣橱") }}</RouterLink>
     </div>
 
     <article v-else-if="item && product" class="layout" :inert="loading || !!error || undefined">
       <ImageGallery :images="images" :alt="item.name" :fallback-color="color?.hex" />
 
       <div class="info">
-        <nav v-if="categoryLinks.length" class="crumbs" aria-label="分类">
+        <nav v-if="categoryLinks.length" class="crumbs" :aria-label='translate("分类")'>
           <template v-for="(c, i) in categoryLinks" :key="c.slug">
             <span v-if="i" aria-hidden="true">/</span>
             <RouterLink :to="{ name: 'wardrobe', query: { category: c.slug } }">{{ c.name }}</RouterLink>
           </template>
         </nav>
-        <div class="brand">{{ product.brand?.name ?? "无品牌" }}</div>
+        <div class="brand">{{ product.brand?.name ?? translate("无品牌") }}</div>
         <h1>{{ item.name }}</h1>
         <p v-if="product.name_zh && product.name_zh !== item.name" class="name-zh">{{ product.name_zh }}</p>
         <div class="badges">
           <span v-if="item.status !== 'owned'" class="badge dark">{{ label(STATUS_LABELS, item.status) }}</span>
-          <span v-if="item.verification === 'verified'" class="badge" title="关键资料已由本人核实">已核实</span>
-          <span v-if="product.origin === 'manual'" class="badge" title="没有官方资料，由用户自建">自建商品</span>
-          <span v-if="item.favorite" class="badge">收藏</span>
+          <span v-if="item.verification === 'verified'" class="badge" :title='translate("关键资料已由本人核实")'>{{ translate("已核实") }}</span>
+          <span v-if="product.origin === 'manual'" class="badge" :title='translate("没有官方资料，由用户自建")'>{{ translate("自建商品") }}</span>
+          <span v-if="item.favorite" class="badge">{{ translate("收藏") }}</span>
         </div>
 
         <div class="item-actions actions">
-          <RouterLink :to="{ name: 'item-edit', params: { id: item.id } }" class="btn small">编辑</RouterLink>
-          <button type="button" class="btn ghost small" :disabled="busy || loading || !!error" @click="wear">记一次穿着</button>
-          <button v-if="item.status === 'owned'" type="button" class="btn ghost small" :disabled="busy || loading || !!error" :aria-expanded="returning" @click="returning = !returning">退货…</button>
-          <button type="button" class="btn ghost small" :aria-expanded="analyzingColor" @click="analyzingColor = !analyzingColor">分析照片颜色</button>
-          <button type="button" class="btn ghost small" :aria-expanded="suggestingTags" @click="suggestingTags = !suggestingTags">建议标签/分类</button>
-          <button type="button" class="btn ghost small" :disabled="busy || loading || !!error" @click="toggleVerify">{{ item.verification === "verified" ? "取消核实" : "标记为已核实" }}</button>
-          <button type="button" class="btn danger small" :disabled="busy || loading || !!error" @click="remove">删除</button>
+          <RouterLink :to="{ name: 'item-edit', params: { id: item.id } }" class="btn small">{{ translate("编辑") }}</RouterLink>
+          <button type="button" class="btn ghost small" :disabled="busy || loading || !!error" @click="wear">{{ translate("记一次穿着") }}</button>
+          <button v-if="item.status === 'owned'" type="button" class="btn ghost small" :disabled="busy || loading || !!error" :aria-expanded="returning" @click="returning = !returning">{{ translate("退货…") }}</button>
+          <button type="button" class="btn ghost small" :aria-expanded="analyzingColor" @click="analyzingColor = !analyzingColor">{{ translate("分析照片颜色") }}</button>
+          <button type="button" class="btn ghost small" :aria-expanded="suggestingTags" @click="suggestingTags = !suggestingTags">{{ translate("建议标签/分类") }}</button>
+          <button type="button" class="btn ghost small" :disabled="busy || loading || !!error" @click="toggleVerify">{{ item.verification === "verified" ? translate("取消核实") : translate("标记为已核实") }}</button>
+          <button type="button" class="btn danger small" :disabled="busy || loading || !!error" @click="remove">{{ translate("删除") }}</button>
         </div>
         <form v-if="returning" class="return-form panel" @submit.prevent="submitReturn">
-          <label class="field"><span>退货日期</span><input v-model="returnForm.returned_on" type="date" required /></label>
-          <label class="field"><span>退款金额（{{ item.purchase?.currency ?? product.currency }}）</span><input v-model="returnForm.refund_amount" type="number" min="0" inputmode="numeric" /></label>
+          <label class="field"><span>{{ translate("退货日期") }}</span><input v-model="returnForm.returned_on" type="date" required /></label>
+          <label class="field"><span>{{ translate("退款金额（") }}{{ item.purchase?.currency ?? product.currency }}）</span><input v-model="returnForm.refund_amount" type="number" min="0" inputmode="numeric" /></label>
           <div class="actions">
-            <button type="submit" class="btn small" :disabled="busy || loading || !!error">确认退货</button>
-            <button type="button" class="btn ghost small" @click="returning = false">取消</button>
+            <button type="submit" class="btn small" :disabled="busy || loading || !!error">{{ translate("确认退货") }}</button>
+            <button type="button" class="btn ghost small" @click="returning = false">{{ translate("取消") }}</button>
           </div>
-          <p class="muted hint-small">只改这件衣物，购买记录保持原样。</p>
+          <p class="muted hint-small">{{ translate("只改这件衣物，购买记录保持原样。") }}</p>
         </form>
-        <p v-if="actionError" class="error-banner" role="alert">{{ actionError }}</p>
+        <p v-if="actionError" class="error-banner" role="alert">{{ actionError?.() }}</p>
         <ColorSuggestPanel
           v-if="analyzingColor"
           :key="item.id"
@@ -316,50 +317,50 @@ function back() {
           @created="loadProposals(item.id)"
           @close="suggestingTags = false"
         />
-        <ProposalList v-if="proposals.length" :proposals="proposals" title="待确认的修改提议" @changed="load" />
+        <ProposalList v-if="proposals.length" :proposals="proposals" :title='translate("待确认的修改提议")' @changed="load" />
 
         <dl class="key-facts">
           <div>
-            <dt>颜色</dt>
+            <dt>{{ translate("颜色") }}</dt>
             <dd>
               <span class="inline">
                 <ColorDot :hex="color?.hex" :swatch="item?.color_swatch?.hex" :family="color?.family" :size="16" />
                 {{ colorText }}<span v-if="color?.code && color.code !== colorText" class="muted">（{{ color.code }}）</span>
               </span>
-              <span v-if="color?.source" class="source">来源：{{ label(SOURCE_LABELS, color.source) }}</span>
+              <span v-if="color?.source" class="source">{{ translate("来源：") }}{{ label(SOURCE_LABELS, color.source) }}</span>
             </dd>
           </div>
           <div>
-            <dt>尺码</dt>
+            <dt>{{ translate("尺码") }}</dt>
             <dd>
-              {{ size?.label ?? "未记录" }}
-              <span v-if="size?.source" class="source">来源：{{ label(SOURCE_LABELS, size.source) }}</span>
+              {{ size?.label ?? translate("未记录") }}
+              <span v-if="size?.source" class="source">{{ translate("来源：") }}{{ label(SOURCE_LABELS, size.source) }}</span>
             </dd>
           </div>
           <div v-if="item.acquired_on">
-            <dt>取得日期</dt>
+            <dt>{{ translate("取得日期") }}</dt>
             <dd>{{ item.acquired_on }}</dd>
           </div>
           <div v-if="item.location">
-            <dt>收纳位置</dt>
+            <dt>{{ translate("收纳位置") }}</dt>
             <dd>{{ item.location }}</dd>
           </div>
           <div>
-            <dt>穿着</dt>
-            <dd>{{ item.wear_count }} 次<span v-if="item.last_worn_on" class="muted">（最近 {{ item.last_worn_on }}）</span></dd>
+            <dt>{{ translate("穿着") }}</dt>
+            <dd>{{ item.wear_count }} {{ translate("次") }}<span v-if="item.last_worn_on" class="muted">{{ translate("（最近") }} {{ item.last_worn_on }}）</span></dd>
           </div>
           <div v-if="item.alterations">
-            <dt>修改</dt>
+            <dt>{{ translate("修改") }}</dt>
             <dd>{{ item.alterations }}</dd>
           </div>
           <div v-if="item.status === 'returned'">
-            <dt>退货</dt>
+            <dt>{{ translate("退货") }}</dt>
             <dd>
-              {{ item.retired_on ?? "" }}<span v-if="item.refund_amount !== null">，退款 {{ yen(item.refund_amount, item.purchase?.currency ?? product.currency) }}</span>
+              {{ item.retired_on ?? "" }}<span v-if="item.refund_amount !== null">{{ translate("，退款") }} {{ yen(item.refund_amount, item.purchase?.currency ?? product.currency) }}</span>
             </dd>
           </div>
           <div v-else-if="item.retired_on">
-            <dt>离开衣橱</dt>
+            <dt>{{ translate("离开衣橱") }}</dt>
             <dd>{{ item.retired_on }}</dd>
           </div>
         </dl>
@@ -377,45 +378,45 @@ function back() {
         <p v-if="item.notes" class="notes">{{ item.notes }}</p>
 
         <section>
-          <h2 class="with-link">商品信息 <RouterLink :to="{ name: 'product', params: { id: product.id } }" class="link-btn">查看 / 编辑商品资料</RouterLink></h2>
+          <h2 class="with-link">{{ translate("商品信息") }} <RouterLink :to="{ name: 'product', params: { id: product.id } }" class="link-btn">{{ translate("查看 / 编辑商品资料") }}</RouterLink></h2>
           <dl class="table">
             <div v-for="ident in product.identifiers" :key="ident.id">
               <dt>{{ label(SCHEME_LABELS, ident.scheme) }}</dt>
               <dd class="mono">{{ ident.value }}</dd>
             </div>
             <div v-if="product.name_en">
-              <dt>英文名</dt>
+              <dt>{{ translate("英文名") }}</dt>
               <dd>{{ product.name_en }}</dd>
             </div>
             <div v-if="product.gender">
-              <dt>类别</dt>
+              <dt>{{ translate("类别") }}</dt>
               <dd>{{ label(GENDER_LABELS, product.gender) }}</dd>
             </div>
             <div v-if="product.season_label">
-              <dt>季节</dt>
+              <dt>{{ translate("季节") }}</dt>
               <dd>{{ product.season_label }}</dd>
             </div>
             <div v-if="product.list_price !== null">
-              <dt>标价</dt>
+              <dt>{{ translate("标价") }}</dt>
               <dd>{{ yen(product.list_price, product.currency) }}</dd>
             </div>
             <div v-if="product.colors.length">
-              <dt>商品颜色</dt>
+              <dt>{{ translate("商品颜色") }}</dt>
               <dd class="color-list">
                 <span v-for="c in product.colors" :key="c.id" class="inline">
                   <ColorDot :hex="c.hex" :family="c.color_family" />
-                  {{ c.name_ja ?? c.name_zh ?? c.color_code }}<span v-if="c.is_default" class="muted">（默认）</span>
+                  {{ c.name_ja ?? c.name_zh ?? c.color_code }}<span v-if="c.is_default" class="muted">{{ translate("（默认）") }}</span>
                 </span>
               </dd>
             </div>
             <div v-if="product.sizes.length">
-              <dt>商品尺码</dt>
+              <dt>{{ translate("商品尺码") }}</dt>
               <dd>{{ product.sizes.map((s) => s.size_label).join(" / ") }}</dd>
             </div>
             <div v-if="product.detail_url">
-              <dt>详情页</dt>
+              <dt>{{ translate("详情页") }}</dt>
               <dd>
-                <a :href="product.detail_url" target="_blank" rel="noopener noreferrer">在新窗口打开</a>
+                <a :href="product.detail_url" target="_blank" rel="noopener noreferrer">{{ translate("在新窗口打开") }}</a>
               </dd>
             </div>
           </dl>
@@ -423,11 +424,11 @@ function back() {
         </section>
 
         <section v-if="product.material_text || product.materials.length">
-          <h2>材质</h2>
+          <h2>{{ translate("材质") }}</h2>
           <p v-if="product.material_text" class="raw">{{ product.material_text }}</p>
           <table v-if="product.materials.length" class="materials">
             <thead>
-              <tr><th>部位</th><th>纤维</th><th>比例</th></tr>
+              <tr><th>{{ translate("部位") }}</th><th>{{ translate("纤维") }}</th><th>{{ translate("比例") }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="(m, i) in product.materials" :key="i">
@@ -440,60 +441,60 @@ function back() {
         </section>
 
         <section v-if="product.care_text || product.care_symbols.length">
-          <h2>保养</h2>
+          <h2>{{ translate("保养") }}</h2>
           <p v-if="product.care_text">{{ product.care_text }}</p>
           <p v-if="product.care_symbols.length" class="muted">{{ product.care_symbols.join("、") }}</p>
         </section>
 
         <section v-if="item.purchase && line">
-          <h2 class="with-link">购买记录 <RouterLink :to="{ name: 'purchase', params: { id: item.purchase.purchase_id } }" class="link-btn">打开购买记录</RouterLink></h2>
+          <h2 class="with-link">{{ translate("购买记录") }} <RouterLink :to="{ name: 'purchase', params: { id: item.purchase.purchase_id } }" class="link-btn">{{ translate("打开购买记录") }}</RouterLink></h2>
           <dl class="table">
             <div>
-              <dt>日期</dt>
+              <dt>{{ translate("日期") }}</dt>
               <dd>{{ item.purchase.purchased_on }}</dd>
             </div>
             <div v-if="item.purchase.store_name">
-              <dt>店铺</dt>
+              <dt>{{ translate("店铺") }}</dt>
               <dd>{{ item.purchase.store_name }}</dd>
             </div>
             <div v-if="line.item_code_raw">
-              <dt>小票编号</dt>
+              <dt>{{ translate("小票编号") }}</dt>
               <dd class="mono">{{ line.item_code_raw }}</dd>
             </div>
             <div v-if="line.name_raw">
-              <dt>小票名称</dt>
+              <dt>{{ translate("小票名称") }}</dt>
               <dd>{{ line.name_raw }}</dd>
             </div>
             <div v-if="line.color_name || line.color_code">
-              <dt>购买颜色</dt>
+              <dt>{{ translate("购买颜色") }}</dt>
               <dd>{{ line.color_name ?? "" }}<span v-if="line.color_code" class="muted">（{{ line.color_code }}）</span></dd>
             </div>
             <div v-if="line.size_label">
-              <dt>购买尺码</dt>
+              <dt>{{ translate("购买尺码") }}</dt>
               <dd>{{ line.size_label }}</dd>
             </div>
             <div v-if="line.unit_price !== null">
-              <dt>单价</dt>
+              <dt>{{ translate("单价") }}</dt>
               <dd>
                 {{ yen(line.unit_price, item.purchase.currency) }}
-                <span v-if="line.discount_amount" class="muted">（折扣 {{ yen(line.discount_amount, item.purchase.currency) }}）</span>
+                <span v-if="line.discount_amount" class="muted">{{ translate("（折扣") }} {{ yen(line.discount_amount, item.purchase.currency) }}）</span>
               </dd>
             </div>
             <div>
-              <dt>数量</dt>
-              <dd>{{ line.quantity }} 件<span v-if="line.returned_quantity" class="muted">（已退 {{ line.returned_quantity }}）</span></dd>
+              <dt>{{ translate("数量") }}</dt>
+              <dd>{{ line.quantity }} {{ translate("件") }}<span v-if="line.returned_quantity" class="muted">{{ translate("（已退") }} {{ line.returned_quantity }}）</span></dd>
             </div>
           </dl>
         </section>
 
         <section v-if="item.outfits.length">
-          <h2>所在穿搭</h2>
+          <h2>{{ translate("所在穿搭") }}</h2>
           <ul class="outfits">
             <li v-for="o in item.outfits" :key="o.id"><RouterLink :to="{ name: 'outfit', params: { id: o.id } }">{{ o.name }}</RouterLink></li>
           </ul>
         </section>
 
-        <p class="updated muted">衣物编号 {{ item.id }} · 版本 {{ item.version }} · 最近更新 {{ item.updated_at.replace("T", " ").replace("Z", " UTC") }}</p>
+        <p class="updated muted">{{ translate("衣物编号") }} {{ item.id }} {{ translate("· 版本") }} {{ item.version }} {{ translate("· 最近更新") }} {{ item.updated_at.replace("T", " ").replace("Z", " UTC") }}</p>
       </div>
     </article>
     <SimilarItems v-if="item && product" :key="item.id" :item-id="item.id" :basis="similarBasis" />

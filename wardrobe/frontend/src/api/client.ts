@@ -1,3 +1,4 @@
+import { t as translate } from "../i18n";
 // 后端 REST API 的薄封装。所有业务规则（匹配、核实保护、撤销）都在后端，前端不重复实现。
 import type {
   ApiErrorBody,
@@ -73,13 +74,13 @@ export async function request<T>(
       body: opts.form ?? (opts.body === undefined ? undefined : JSON.stringify(opts.body)),
     });
   } catch {
-    throw new ApiError(0, "NETWORK", "无法连接到本机服务，请确认已执行 ./wardrobe start");
+    throw new ApiError(0, "NETWORK", translate("无法连接到本机服务，请确认已执行 ./wardrobe start"));
   }
   const text = await resp.text();
   const data = text ? safeJson(text) : null;
   if (!resp.ok) {
     const err = (data as ApiErrorBody | null)?.error;
-    throw new ApiError(resp.status, err?.code ?? `HTTP_${resp.status}`, err?.message ?? `请求失败（${resp.status}）`, err?.details ?? []);
+    throw new ApiError(resp.status, err?.code ?? `HTTP_${resp.status}`, err?.message ?? translate("请求失败（{0}）", resp.status), err?.details ?? []);
   }
   return data as T;
 }

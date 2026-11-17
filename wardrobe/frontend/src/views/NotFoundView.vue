@@ -1,8 +1,11 @@
+<script setup lang="ts">
+import { t as translate } from "../i18n";
+</script>
 <template>
   <section class="nf">
-    <h1>页面不存在</h1>
-    <p class="muted">链接可能已失效。</p>
-    <RouterLink to="/" class="btn ghost">返回我的衣橱</RouterLink>
+    <h1>{{ translate("页面不存在") }}</h1>
+    <p class="muted">{{ translate("链接可能已失效。") }}</p>
+    <RouterLink to="/" class="btn ghost">{{ translate("返回我的衣橱") }}</RouterLink>
   </section>
 </template>
 
